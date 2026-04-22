@@ -1,0 +1,11 @@
+{
+    "mcuID":"ESP_001",
+    "voltage":126,
+    "current":3.156,
+    "power_active":61,
+    "power_reactive":0.5,
+    "power_apparent":62,
+    "power_factor":0.95,
+    "fase":-9,
+    "frequency":59
+}
