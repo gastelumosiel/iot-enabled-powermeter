@@ -3,3 +3,6 @@ hardware/**
 mqtt/**
 LICENSE.txt
 README.md
+backend/venv/**
+**/__pycache__/
+node_modules/**
