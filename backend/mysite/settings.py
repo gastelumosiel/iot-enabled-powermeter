@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'calculator',
     'pahomqtt',
     'rest_framework',
+    'module'
 ]
 
 MIDDLEWARE = [
