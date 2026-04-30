@@ -17,10 +17,17 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from pahomqtt import views
+from rest_framework import routers
+from mysite.quickstart import views
 
+router = routers.DefaultRouter()
+router.register(r"users", views.UserViewSet)
+router.register(r"groups",views.GroupViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('app/', include('calculator.urls')),
-    path('publish', views.publish_message, name='publish')
+    #path('publish', views.publish_message, name='publish'),
+    path("", include(router.urls)),
+    path("api-auth/", include("rest_framework.urls", namespace="rest_framework")),
 ]
