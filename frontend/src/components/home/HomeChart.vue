@@ -32,6 +32,7 @@ watch([() => props.period, () => props.range], () => {
   const max = 10000
 
   data.value = dates.map(date => ({ date, amount: Math.floor(Math.random() * (max - min + 1)) + min }))
+  console.log(data.value)
 }, { immediate: true })
 
 const x = (_: DataRecord, i: number) => i
