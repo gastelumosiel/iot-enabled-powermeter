@@ -50,6 +50,14 @@ export const deviceService = {
     localDevices = [device, ...localDevices]
     return device
   },
+  async update(id, payload) {
+    const response = await fallback(() => api.patch(`/api/devices/${id}/`, payload))
+    if (response?.data) return response.data
+    localDevices = localDevices.map((device) => (
+      device.device_id === id || device.id === id ? { ...device, ...payload, timestamp: new Date().toISOString() } : device
+    ))
+    return localDevices.find((device) => device.device_id === id || device.id === id)
+  },
   async remove(id) {
     const response = await fallback(() => api.delete(`/api/devices/${id}/`))
     localDevices = localDevices.filter((device) => device.device_id !== id && device.id !== id)

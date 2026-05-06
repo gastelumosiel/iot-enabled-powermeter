@@ -27,6 +27,12 @@ export const useDeviceStore = defineStore('devices', {
       await this.fetchDevices()
       return device
     },
+    async updateDevice(id, payload) {
+      const device = await deviceService.update(id, payload)
+      const index = this.devices.findIndex((item) => item.device_id === id || item.id === id)
+      if (index >= 0 && device) this.devices[index] = device
+      return device
+    },
     async deleteDevice(id) {
       await deviceService.remove(id)
       this.devices = this.devices.filter((device) => device.device_id !== id && device.id !== id)

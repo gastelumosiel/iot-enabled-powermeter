@@ -72,15 +72,56 @@ export function withLiveNoise(devices) {
   return devices.map((device) => {
     const jitter = Math.round((Math.random() - 0.45) * (device.active_power * 0.08))
     const active = Math.max(0, device.active_power + jitter)
+    const powerFactor = Math.min(1, Math.max(0.72, Number(device.power_factor || 0.95) + (Math.random() - 0.5) * 0.02))
+    const voltage = Math.max(105, Number(device.vrms || 220) + (Math.random() - 0.5) * 1.8)
     return {
       ...device,
       timestamp: new Date().toISOString(),
       active_power: active,
-      irms: +(active / device.vrms).toFixed(2),
-      apparent_power: Math.round(active / Math.max(device.power_factor, 0.1)),
-      reactive_power: Math.round(active * 0.1),
+      vrms: +voltage.toFixed(1),
+      irms: +(active / voltage).toFixed(2),
+      power_factor: +powerFactor.toFixed(2),
+      apparent_power: Math.round(active / Math.max(powerFactor, 0.1)),
+      reactive_power: Math.round(active * (1 - powerFactor + 0.08)),
+      phase: +(Number(device.phase || 0) + (Math.random() - 0.5) * 0.8).toFixed(1),
+      frequency: +(Number(device.frequency || 60) + (Math.random() - 0.5) * 0.08).toFixed(2),
+      energy_kwh: +(Number(device.energy_kwh || 0) + active / 1000 / 720).toFixed(3),
     }
   })
+}
+
+function rangeConfig(range = '24h') {
+  const configs = {
+    '1h': { points: 13, step: 5 * 60000, time: true },
+    '8h': { points: 17, step: 30 * 60000, time: true },
+    '24h': { points: 24, step: 60 * 60000, time: true },
+    '7d': { points: 14, step: 12 * 60 * 60000, date: true },
+    '30d': { points: 30, step: 24 * 60 * 60000, date: true },
+    '3m': { points: 13, step: 7 * 24 * 60 * 60000, date: true },
+    '6m': { points: 13, step: 14 * 24 * 60 * 60000, date: true },
+    '12m': { points: 12, step: 30 * 24 * 60 * 60000, month: true },
+  }
+  return configs[range] || configs['24h']
+}
+
+function parameterValue(device, parameter = 'active_power') {
+  const fallback = {
+    active_power: device.active_power,
+    reactive_power: device.reactive_power,
+    apparent_power: device.apparent_power,
+    vrms: device.vrms,
+    irms: device.irms,
+    power_factor: device.power_factor,
+    frequency: device.frequency,
+    phase: device.phase,
+  }
+  return Number(fallback[parameter] ?? device.active_power ?? 0)
+}
+
+function formatHistoryLabel(date, config, locale) {
+  if (config.month) return date.toLocaleDateString(locale, { month: 'short', year: '2-digit' })
+  if (config.date) return date.toLocaleDateString(locale, { day: '2-digit', month: 'short' })
+  return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }
 
 export function makePowerHistory(range = '24h') {
@@ -96,25 +137,26 @@ export function makePowerHistory(range = '24h') {
   })
 }
 
-export function makeDeviceHistorySeries(devices = mockDevices, range = '24h', locale = 'es-MX') {
-  const points = range === '30d' ? 30 : range === '7d' ? 7 : 24
-  const step = range === '24h' ? 3600000 : 86400000
+export function makeDeviceHistorySeries(devices = mockDevices, range = '24h', locale = 'es-MX', parameter = 'active_power') {
+  const config = rangeConfig(range)
   const palette = ['#047857', '#10b981', '#34d399', '#0f766e', '#65a30d']
 
   return devices.map((device, deviceIndex) => ({
     id: device.device_id,
     name: device.name,
     color: palette[deviceIndex % palette.length],
-    points: Array.from({ length: points }, (_, index) => {
-      const date = new Date(Date.now() - (points - index - 1) * step)
-      const wave = Math.sin(index * 0.7 + deviceIndex) * device.active_power * 0.12
-      const drift = Math.cos(index * 0.35) * device.active_power * 0.05
+    points: Array.from({ length: config.points }, (_, index) => {
+      const date = new Date(Date.now() - (config.points - index - 1) * config.step)
+      const base = parameterValue(device, parameter)
+      const scale = ['power_factor', 'frequency', 'phase'].includes(parameter) ? 0.012 : 0.12
+      const wave = Math.sin(index * 0.7 + deviceIndex) * base * scale
+      const drift = Math.cos(index * 0.35) * base * (scale / 2)
+      const value = Math.max(0, +(base + wave + drift).toFixed(['power_factor', 'irms', 'phase', 'frequency', 'vrms'].includes(parameter) ? 2 : 0))
 
       return {
-        label: range === '24h'
-          ? date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-          : date.toLocaleDateString(locale, { day: '2-digit', month: 'short' }),
-        power: Math.max(0, Math.round(device.active_power + wave + drift)),
+        label: formatHistoryLabel(date, config, locale),
+        value,
+        power: value,
       }
     }),
   }))

@@ -1,6 +1,6 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Check, Languages, LayoutDashboard, LineChart, Settings, User, LogOut, Moon, Sun, Zap } from 'lucide-vue-next'
+import { Check, Languages, LayoutDashboard, LineChart, ReceiptText, Settings, User, LogOut, Moon, Sun, Zap } from 'lucide-vue-next'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useDeviceStore } from '../../stores/devices'
@@ -58,6 +58,7 @@ function setLanguage(language) {
       <nav class="nav">
         <RouterLink class="nav-link" to="/monitor"><LayoutDashboard :size="19" /><span>{{ ui.t('monitor') }}</span></RouterLink>
         <RouterLink class="nav-link" to="/analytics"><LineChart :size="19" /><span>{{ ui.t('analytics') }}</span></RouterLink>
+        <RouterLink class="nav-link" to="/cfe"><ReceiptText :size="19" /><span>{{ ui.t('cfe') }}</span></RouterLink>
         <RouterLink class="nav-link" to="/admin/devices"><Settings :size="19" /><span>{{ ui.t('admin') }}</span></RouterLink>
       </nav>
       <div class="side-bottom">

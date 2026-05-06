@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import DeviceCard from '../components/devices/DeviceCard.vue'
@@ -12,14 +12,30 @@ const selected = ref(null)
 let timer
 
 function updateSelected(device) {
-  if (selected.value && device.device_id === selected.value.device_id) selected.value = device
+  if (!selected.value || device.device_id !== selected.value.device_id) return
+  selected.value = device
+  const index = devices.devices.findIndex((item) => item.device_id === device.device_id)
+  if (index >= 0) devices.devices[index] = device
+}
+
+async function refreshMonitor() {
+  await devices.fetchDevices()
+  if (!selected.value) return
+  const current = devices.devices.find((device) => device.device_id === selected.value.device_id)
+  if (current) selected.value = current
 }
 
 onMounted(async () => {
-  await devices.fetchDevices()
-  timer = setInterval(devices.fetchDevices, 5000)
+  await refreshMonitor()
+  timer = setInterval(refreshMonitor, 5000)
 })
 onUnmounted(() => clearInterval(timer))
+
+watch(() => devices.devices, () => {
+  if (!selected.value) return
+  const current = devices.devices.find((device) => device.device_id === selected.value.device_id)
+  if (current) selected.value = current
+}, { deep: true })
 </script>
 
 <template>

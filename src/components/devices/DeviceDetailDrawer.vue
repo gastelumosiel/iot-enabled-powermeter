@@ -1,6 +1,6 @@
-<script setup>
+﻿<script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Activity, X } from 'lucide-vue-next'
+import { Gauge, Info, X, Zap } from 'lucide-vue-next'
 import StatusBadge from '../ui/StatusBadge.vue'
 import DeviceIcon from './DeviceIcon.vue'
 import { deviceService } from '../../services/deviceService'
@@ -82,26 +82,27 @@ onUnmounted(() => {
         </div>
 
         <section class="card detail-section">
+          <h3><Zap :size="22" color="#10b981" /> {{ ui.t('powerParameters') }}</h3>
           <div class="metric-grid">
-            <div class="metric"><span>{{ ui.t('activePower') }} (P)</span><strong>{{ Math.round(liveDevice.active_power) }} W</strong></div>
-            <div class="metric purple"><span>{{ ui.t('reactivePower') }} (Q)</span><strong>{{ liveDevice.reactive_power }} VAR</strong></div>
-            <div class="metric blue"><span>{{ ui.t('apparentPower') }} (S)</span><strong>{{ liveDevice.apparent_power }} VA</strong></div>
-            <div class="metric yellow"><span>{{ ui.t('powerFactor') }} (PF)</span><strong>{{ liveDevice.power_factor }}</strong></div>
+            <div class="metric p-active"><span>{{ ui.t('activePower') }} (P)</span><strong>{{ Math.round(liveDevice.active_power) }} W</strong></div>
+            <div class="metric p-reactive"><span>{{ ui.t('reactivePower') }} (Q)</span><strong>{{ liveDevice.reactive_power }} VAR</strong></div>
+            <div class="metric p-apparent"><span>{{ ui.t('apparentPower') }} (S)</span><strong>{{ liveDevice.apparent_power }} VA</strong></div>
+            <div class="metric p-factor"><span>{{ ui.t('powerFactor') }} (PF)</span><strong>{{ liveDevice.power_factor }}</strong></div>
           </div>
         </section>
 
         <section class="card detail-section">
-          <h3><Activity :size="22" color="#059669" /> {{ ui.t('electricalParameters') }}</h3>
+          <h3><Gauge :size="22" color="#2563eb" /> {{ ui.t('electricalParameters') }}</h3>
           <div class="parameter-grid">
-            <div class="parameter"><span>{{ ui.t('voltage') }}</span><strong>{{ liveDevice.vrms }} V</strong></div>
-            <div class="parameter" style="border-color:#ef4444"><span>{{ ui.t('current') }}</span><strong>{{ liveDevice.irms }} A</strong></div>
-            <div class="parameter" style="border-color:#a855f7"><span>{{ ui.t('phase') }}</span><strong>{{ liveDevice.phase }}°</strong></div>
-            <div class="parameter" style="border-color:#f59e0b"><span>{{ ui.t('frequency') }}</span><strong>{{ liveDevice.frequency }} Hz</strong></div>
+            <div class="parameter e-voltage"><span>{{ ui.t('voltage') }}</span><strong>{{ liveDevice.vrms }} V</strong></div>
+            <div class="parameter e-current"><span>{{ ui.t('current') }}</span><strong>{{ liveDevice.irms }} A</strong></div>
+            <div class="parameter e-phase"><span>{{ ui.t('phase') }}</span><strong>{{ liveDevice.phase }}°</strong></div>
+            <div class="parameter e-frequency"><span>{{ ui.t('frequency') }}</span><strong>{{ liveDevice.frequency }} Hz</strong></div>
           </div>
         </section>
 
         <section class="card detail-section">
-          <h3><Activity :size="22" color="#059669" /> {{ ui.t('additionalInfo') }}</h3>
+          <h3><Info :size="22" color="#0f766e" /> {{ ui.t('additionalInfo') }}</h3>
           <div class="info-grid">
             <div class="info-row"><span>{{ ui.t('deviceStatus') }}</span><StatusBadge :status="liveDevice.status" /></div>
             <div class="info-row"><span>{{ ui.t('lastUpdate') }}</span><strong>{{ formatTime(liveDevice.timestamp) }}</strong></div>
@@ -113,3 +114,5 @@ onUnmounted(() => {
     </Transition>
   </Teleport>
 </template>
+
+

@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue'
-import { Info, Plus, Trash2 } from 'lucide-vue-next'
+import { Check, Info, Pencil, Plus, Trash2, X } from 'lucide-vue-next'
 import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import StatusBadge from '../components/ui/StatusBadge.vue'
@@ -13,6 +13,9 @@ const form = ref({ device_id: '', name: '', icon: 'plug' })
 const isMutating = ref(false)
 const cooldownUntil = ref(0)
 const pendingDelete = ref(null)
+const editingId = ref('')
+const editingName = ref('')
+const editingIcon = ref('plug')
 let timer
 
 const iconOptions = [
@@ -63,6 +66,31 @@ async function removeDevice(id) {
   cooldownUntil.value = Date.now() + 2200
   try {
     await devices.deleteDevice(id)
+  } finally {
+    window.setTimeout(() => { isMutating.value = false }, 700)
+  }
+}
+
+function startEdit(device) {
+  editingId.value = device.device_id
+  editingName.value = device.name
+  editingIcon.value = device.icon || 'plug'
+}
+
+function cancelEdit() {
+  editingId.value = ''
+  editingName.value = ''
+  editingIcon.value = 'plug'
+}
+
+async function saveDeviceName(device) {
+  const name = editingName.value.trim()
+  if (!name || isMutating.value) return
+  isMutating.value = true
+  cooldownUntil.value = Date.now() + 2200
+  try {
+    await devices.updateDevice(device.device_id, { name, icon: editingIcon.value })
+    cancelEdit()
   } finally {
     window.setTimeout(() => { isMutating.value = false }, 700)
   }
@@ -131,11 +159,42 @@ onUnmounted(() => clearInterval(timer))
         <thead><tr><th>{{ ui.t('device') }}</th><th>{{ ui.t('deviceId') }}</th><th>{{ ui.t('status') }}</th><th>{{ ui.t('power') }}</th><th>{{ ui.t('actions') }}</th></tr></thead>
         <tbody>
           <tr v-for="device in devices.devices" :key="device.device_id">
-            <td><div class="device-cell"><span class="icon-box" style="background:#d1fae5;color:#059669"><DeviceIcon :icon="device.icon" /></span><div><strong>{{ device.name }}</strong><br><span class="muted">{{ ui.t('updated') }} {{ formatTime(device.timestamp) }}</span></div></div></td>
+            <td>
+              <div class="device-cell">
+                <span class="icon-box" style="background:#d1fae5;color:#059669"><DeviceIcon :icon="device.icon" /></span>
+                <div class="device-name-stack">
+                  <div v-if="editingId === device.device_id" class="inline-edit">
+                    <input v-model="editingName" class="input compact-input" :aria-label="ui.t('deviceNameLabel')" @keyup.enter="saveDeviceName(device)" @keyup.esc="cancelEdit" />
+                    <div class="inline-icon-picker" :aria-label="ui.t('iconLabel')">
+                      <button
+                        v-for="option in iconOptions"
+                        :key="option.value"
+                        type="button"
+                        class="icon-choice compact"
+                        :class="{ selected: editingIcon === option.value }"
+                        :title="ui.t(option.label)"
+                        @click="editingIcon = option.value"
+                      >
+                        <DeviceIcon :icon="option.value" :size="17" />
+                      </button>
+                    </div>
+                    <button class="icon-btn small" type="button" :disabled="isMutating" :title="ui.t('save')" @click="saveDeviceName(device)"><Check :size="16" /></button>
+                    <button class="icon-btn small" type="button" :disabled="isMutating" :title="ui.t('cancel')" @click="cancelEdit"><X :size="16" /></button>
+                  </div>
+                  <strong v-else>{{ device.name }}</strong>
+                  <span class="muted">{{ ui.t('updated') }} {{ formatTime(device.timestamp) }}</span>
+                </div>
+              </div>
+            </td>
             <td>{{ device.device_id }}</td>
             <td><StatusBadge :status="device.status" /></td>
             <td><strong>{{ Math.round(device.active_power) }} W</strong></td>
-            <td><button class="btn btn-danger" :disabled="isMutating" :title="ui.t('delete')" @click="askDelete(device)"><Trash2 :size="18" /></button></td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn small" :disabled="isMutating" :title="ui.t('editName')" @click="startEdit(device)"><Pencil :size="16" /></button>
+                <button class="btn btn-danger" :disabled="isMutating" :title="ui.t('delete')" @click="askDelete(device)"><Trash2 :size="18" /></button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
