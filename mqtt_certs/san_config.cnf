@@ -11,7 +11,7 @@ ST = BajaCalifornia
 L = Tijuana
 O = Powerlytix
 OU = ESP32
-CN = powerlytix.org
+CN = srv1612408.hstgr.cloud
 
 [v3_req]
 keyUsage = digitalSignature, keyEncipherment
@@ -25,6 +25,5 @@ subjectAltName = @alt_names
 basicConstraints = CA:TRUE
 
 [alt_names]
-DNS.1 = powerlytix.org
-DNS.2 = www.powerlytix.org
+DNS.1 = srv1612408.hstgr.cloud
 IP.1 = 72.62.101.52
