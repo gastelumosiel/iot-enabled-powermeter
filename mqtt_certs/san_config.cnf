@@ -1,0 +1,30 @@
+[req]
+prompt = no
+default_bits = 2048
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+req_extensions = v3_req
+
+[req_distinguished_name]
+C = MX
+ST = BajaCalifornia
+L = Tijuana
+O = Powerlytix
+OU = ESP32
+CN = powerlytix.org
+
+[v3_req]
+keyUsage = digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[v3_ca]
+keyUsage = digitalSignature, keyEncipherment, keyCertSign
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+basicConstraints = CA:TRUE
+
+[alt_names]
+DNS.1 = powerlytix.org
+DNS.2 = www.powerlytix.org
+IP.1 = 72.62.101.52

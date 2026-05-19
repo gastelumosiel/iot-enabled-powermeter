@@ -118,12 +118,6 @@ declare module 'vue-router/auto-routes' {
       views:
         | never
     }
-    'src/pages/testing.vue': {
-      routes:
-        '/testing'
-      views:
-        never
-    }
     'src/pages/inbox.vue': {
       routes:
         | '/inbox'
