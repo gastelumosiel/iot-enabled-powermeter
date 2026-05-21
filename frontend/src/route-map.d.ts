@@ -14,6 +14,9 @@ import type {
   ParamValueZeroOrMore,
   ParamValueZeroOrOne,
 } from 'vue-router'
+import type {
+  _ExtractParamParserType,
+} from 'vue-router/experimental'
 
 declare module 'vue-router' {
   interface TypesConfig {
@@ -86,13 +89,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/testing': RouteRecordInfo<
-      '/testing',
-      '/testing',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
   }
 
   /**
@@ -155,12 +151,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/settings/security.vue': {
       routes:
         | '/settings/security'
-      views:
-        | never
-    }
-    'src/pages/testing.vue': {
-      routes:
-        | '/testing'
       views:
         | never
     }

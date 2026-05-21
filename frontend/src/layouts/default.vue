@@ -25,13 +25,6 @@ const links = [[{
     open.value = false
   }
 }, {
-  label: 'Testing',
-  icon: 'i-lucide-backpack',
-  to: '/testing',
-  onSelect: () => {
-    open.value = false
-  }
-}, {
   label: 'Customers',
   icon: 'i-lucide-users',
   to: '/customers',
