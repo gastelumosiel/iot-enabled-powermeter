@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from mysite.mqtt import client as mqtt_client
 from mysite.mqtt import message_topic, message_received, message_flag
 from django.views.decorators.csrf import csrf_exempt
-from models import Messages
+from .models import Messages
 
 
 # Create your views here.
