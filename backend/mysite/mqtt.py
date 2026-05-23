@@ -3,6 +3,7 @@ from django.conf import settings
 
 message_received = None
 message_topic = None
+message_flag = False
 
 def on_connect(mqtt_client, userdata, flags, rc):
     if rc == 0:
@@ -15,6 +16,7 @@ def on_message(mqtt_client, userdata, msg):
     print(f'Received message on topic: {msg.topic} with payload: {msg.payload}')
     message_received = msg.payload
     message_topic = msg.topic
+    message_flag = True
 
 client = mqtt.Client()
 client.on_connect = on_connect
