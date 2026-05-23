@@ -27,3 +27,4 @@ if message_flag is True:
                           phase = msg["phase"],
                           frequency = msg["frequency"],
                           date = msg["date"])
+    save_entry.save()
