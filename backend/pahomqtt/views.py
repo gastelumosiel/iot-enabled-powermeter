@@ -5,6 +5,7 @@ from mysite.mqtt import client as mqtt_client
 from mysite.mqtt import message_topic, message_received, message_flag
 from django.views.decorators.csrf import csrf_exempt
 from .models import Messages
+import datetime
 
 
 # Create your views here.
@@ -26,5 +27,5 @@ if message_flag is True:
                           power_factor = msg["power_factor"],
                           phase = msg["phase"],
                           frequency = msg["frequency"],
-                          date = msg["date"])
+                          date = datetime.datetime.fromtimestamp(msg["date"]))
     save_entry.save()
