@@ -5,6 +5,7 @@ from mysite.mqtt import client as mqtt_client
 from mysite.mqtt import message_topic, message_received
 from django.views.decorators.csrf import csrf_exempt
 
+
 # Create your views here.
 @csrf_exempt
 def publish_message(request):
