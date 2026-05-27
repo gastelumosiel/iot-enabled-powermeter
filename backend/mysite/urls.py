@@ -22,7 +22,8 @@ from mysite.quickstart import views as mysiteviews
 
 router = routers.DefaultRouter()
 router.register(r"users", mysiteviews.UserViewSet)
-router.register(r"groups",mysiteviews.GroupViewSet)
+router.register(r"groups", mysiteviews.GroupViewSet)
+router.register(r"messages", mysiteviews.MessagesViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
