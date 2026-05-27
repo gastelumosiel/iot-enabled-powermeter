@@ -43,7 +43,7 @@ def on_message(mqtt_client, userdata, msg):
             p_apparent=float(msg_data.get('p_apparent', 0)),
             power_factor=float(msg_data.get('power_factor', 0)),
             phase=float(msg_data.get('phase', 0)),
-            frequency=parse_bool(msg_data.get('frequency', False)),
+            frequency=float(msg_data.get('frequency', False)),
             date=datetime.datetime.fromtimestamp(float(msg_data.get('date', datetime.datetime.now().timestamp())))
         )
         print('Saved MQTT message to DB.')

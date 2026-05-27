@@ -1,8 +1,13 @@
 from django.db import models
 
+class ESPModule(models.Model):
+    esp_id = models.CharField(max_length=100, unique=True)
+    owner = models.CharField()
+
+
 # Create your models here.
 class Messages(models.Model):
-    esp_id = models.CharField(max_length=100, blank=True, default="")
+    esp_id = models.ForeignKey(ESPModule, on_delete=models.CASCADE)
     voltage = models.FloatField()
     current = models.FloatField()
     p_active = models.FloatField()
@@ -10,9 +15,9 @@ class Messages(models.Model):
     p_apparent = models.FloatField()
     power_factor = models.FloatField()
     phase = models.FloatField()
-    frequency = models.BooleanField(default=False)
+    frequency = models.FloatField()
     date = models.DateTimeField()
 
     class Meta:
-        ordering = ["esp_id"]
+        ordering = ["date"]
         db_table = 'data_modules'
