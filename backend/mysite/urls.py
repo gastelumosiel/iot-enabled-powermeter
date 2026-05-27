@@ -21,10 +21,10 @@ from rest_framework import routers
 from mysite.quickstart import views as mysiteviews
 
 router = routers.DefaultRouter()
-router.register(r"users", mysiteviews.UserViewSet)
-router.register(r"groups", mysiteviews.GroupViewSet)
-router.register(r"messages", mysiteviews.MessagesViewSet)
-router.register(r"espmodules", mysiteviews.ESPViewSet)
+router.register(r"users", mysiteviews.UserViewSet, basename="user")
+router.register(r"groups", mysiteviews.GroupViewSet, basename="group")
+router.register(r"messages", mysiteviews.MessagesViewSet, basename="message")
+router.register(r"espmodules", mysiteviews.ESPViewSet, basename="espmodule")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
