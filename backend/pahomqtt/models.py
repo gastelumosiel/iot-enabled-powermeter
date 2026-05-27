@@ -4,6 +4,10 @@ class ESPModule(models.Model):
     esp_id = models.CharField(max_length=100, unique=True)
     owner = models.CharField()
 
+    class Meta:
+        ordering = ["owner"]
+        db_table = 'ESP_Modules'
+
 
 # Create your models here.
 class Messages(models.Model):
@@ -20,4 +24,4 @@ class Messages(models.Model):
 
     class Meta:
         ordering = ["date"]
-        db_table = 'data_modules'
+        db_table = 'Sensor_Messages'
