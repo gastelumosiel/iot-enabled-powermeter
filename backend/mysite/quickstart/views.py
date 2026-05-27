@@ -28,8 +28,16 @@ class GroupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class MessagesViewSet(viewsets.ModelViewSet):
-    queryset = Messages.objects.all().order_by("esp_id")
+    # queryset = Messages.objects.all().order_by("esp_id")
     serializer_class = MessagesSerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases
+        for the currently authenticated user.
+        """
+        volts = 127
+        return Messages.objects.filter(voltage=volts)
 
 class ESPViewSet(viewsets.ModelViewSet):
     queryset = ESPModule.objects.all().order_by("owner")
