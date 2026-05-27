@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group, User
 from rest_framework import permissions, viewsets
 from pahomqtt.models import ESPModule, Messages
 
-from mysite.quickstart.serializers import GroupSerializer, UserSerializer, MessagesSerializer
+from mysite.quickstart.serializers import GroupSerializer, UserSerializer, MessagesSerializer, ESPSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -30,3 +30,8 @@ class GroupViewSet(viewsets.ModelViewSet):
 class MessagesViewSet(viewsets.ModelViewSet):
     queryset = Messages.objects.all().order_by("esp_id")
     serializer_class = MessagesSerializer
+
+class ESPViewSet(viewsets.ModelViewSet):
+    queryset = ESPModule.objects.all().order_by("owner")
+    serializer_class = ESPSerializer
+
