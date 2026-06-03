@@ -3,8 +3,9 @@ from django.shortcuts import render
 # Create your views here.
 from django.contrib.auth.models import Group, User
 from rest_framework import permissions, viewsets
+from pahomqtt.models import ESPModule, Messages
 
-from mysite.quickstart.serializers import GroupSerializer, UserSerializer
+from mysite.quickstart.serializers import GroupSerializer, UserSerializer, MessagesSerializer, ESPSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -25,3 +26,20 @@ class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all().order_by("name")
     serializer_class = GroupSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+class MessagesViewSet(viewsets.ModelViewSet):
+    # queryset = Messages.objects.all().order_by("esp_id")
+    serializer_class = MessagesSerializer
+
+    def get_queryset(self):
+        """
+        This view should return a list of all the purchases
+        for the currently authenticated user.
+        """
+        volts = 127
+        return Messages.objects.filter(voltage=volts)
+
+class ESPViewSet(viewsets.ModelViewSet):
+    queryset = ESPModule.objects.all().order_by("owner")
+    serializer_class = ESPSerializer
+

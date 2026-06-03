@@ -7,6 +7,7 @@ README.md
 backend/venv/**
 **/__pycache__/
 node_modules/**
+<<<<<<< HEAD
 =======
 # Logs
 logs
@@ -70,3 +71,6 @@ __screenshots__/
 # Vite
 *.timestamp-*-*.mjs
 >>>>>>> powerlytix-front
+=======
+**/node_modules/**
+>>>>>>> Django_dev

@@ -16,13 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from pahomqtt import views
+from pahomqtt import views as mqttviews
 from rest_framework import routers
-from mysite.quickstart import views
+from mysite.quickstart import views as mysiteviews
 
 router = routers.DefaultRouter()
-router.register(r"users", views.UserViewSet)
-router.register(r"groups",views.GroupViewSet)
+router.register(r"users", mysiteviews.UserViewSet, basename="user")
+router.register(r"groups", mysiteviews.GroupViewSet, basename="group")
+router.register(r"messages", mysiteviews.MessagesViewSet, basename="message")
+router.register(r"espmodules", mysiteviews.ESPViewSet, basename="espmodule")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
