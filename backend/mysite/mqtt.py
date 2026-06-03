@@ -44,7 +44,10 @@ def on_message(mqtt_client, userdata, msg):
             power_factor=float(msg_data.get('power_factor', 0)),
             phase=float(msg_data.get('phase', 0)),
             frequency=float(msg_data.get('frequency', False)),
-            date=datetime.datetime.fromtimestamp(float(msg_data.get('date', datetime.datetime.now().timestamp())))
+            date=datetime.datetime.fromtimestamp(
+                float(msg_data.get('date', datetime.datetime.now(datetime.timezone.utc).timestamp())),
+                tz=datetime.timezone.utc,
+            )
         )
         print('Saved MQTT message to DB.')
     except Exception as exc:
@@ -54,7 +57,7 @@ def on_message(mqtt_client, userdata, msg):
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
-#client.username_pw_set(settings.MQTT_USER, settings.MQTT_PASSWORD)
+client.username_pw_set(settings.MQTT_USER, settings.MQTT_PASSWORD)
 client.connect(
     host=settings.MQTT_SERVER,
     port=settings.MQTT_PORT,

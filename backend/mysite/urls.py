@@ -28,6 +28,8 @@ router.register(r"espmodules", mysiteviews.ESPViewSet, basename="espmodule")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('', include('pahomqtt.api_urls')),
+    path('api/', include('pahomqtt.api_urls')),
     path('app/', include('calculator.urls')),
     #path('publish', views.publish_message, name='publish'),
     path("", include(router.urls)),

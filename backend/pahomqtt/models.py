@@ -1,17 +1,36 @@
 from django.db import models
+from django.conf import settings
+
+
+class Device(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="devices", null=True, blank=True)
+    device_id = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=120)
+    icon = models.CharField(max_length=40, default="plug", blank=True)
+    status = models.CharField(max_length=20, default="offline")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["device_id"]
+        db_table = "Devices"
+
+    def __str__(self):
+        return f"{self.device_id} - {self.name}"
+
 
 class ESPModule(models.Model):
     esp_id = models.CharField(max_length=100, unique=True)
-    owner = models.CharField()
+    owner = models.CharField(max_length=120, blank=True, default="")
 
     class Meta:
         ordering = ["owner"]
-        db_table = 'ESP_Modules'
+        db_table = "ESP_Modules"
 
 
 # Create your models here.
 class Messages(models.Model):
-    esp_id = models.ForeignKey(ESPModule, on_delete=models.CASCADE)
+    esp_id = models.CharField(max_length=100, blank=True, default="")
     voltage = models.FloatField()
     current = models.FloatField()
     p_active = models.FloatField()
@@ -24,4 +43,4 @@ class Messages(models.Model):
 
     class Meta:
         ordering = ["date"]
-        db_table = 'Sensor_Messages'
+        db_table = "data_modules"
