@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import { makeDeviceHistorySeries } from '../mocks/devices'
+import { analyticsService } from '../services/analyticsService'
 import PowerLineChart from '../components/charts/PowerLineChart.vue'
 import DeviceBarChart from '../components/charts/DeviceBarChart.vue'
 
@@ -12,6 +13,7 @@ const selectedDeviceIds = ref([])
 const range = ref('24h')
 const parameter = ref('active_power')
 const series = ref([])
+const maxAgeSeconds = ref(0)
 let timer
 
 const chartPalette = [
@@ -38,14 +40,14 @@ const chartPalette = [
 ]
 
 const ranges = [
-  { value: '1h', label: 'lastHour' },
-  { value: '8h', label: 'last8h' },
-  { value: '24h', label: 'last24h' },
-  { value: '7d', label: 'sevenDays' },
-  { value: '30d', label: 'thirtyDays' },
-  { value: '3m', label: 'threeMonths' },
-  { value: '6m', label: 'sixMonths' },
-  { value: '12m', label: 'twelveMonths' },
+  { value: '1h', label: 'lastHour', seconds: 60 * 60 },
+  { value: '8h', label: 'last8h', seconds: 8 * 60 * 60 },
+  { value: '24h', label: 'last24h', seconds: 24 * 60 * 60 },
+  { value: '7d', label: 'sevenDays', seconds: 7 * 24 * 60 * 60 },
+  { value: '30d', label: 'thirtyDays', seconds: 30 * 24 * 60 * 60 },
+  { value: '3m', label: 'threeMonths', seconds: 90 * 24 * 60 * 60 },
+  { value: '6m', label: 'sixMonths', seconds: 180 * 24 * 60 * 60 },
+  { value: '12m', label: 'twelveMonths', seconds: 365 * 24 * 60 * 60 },
 ]
 
 const parameters = [
@@ -71,8 +73,26 @@ const devicePeriodAverages = computed(() => series.value.map((serie) => {
 const selectedPeriodTotal = computed(() => devicePeriodAverages.value.reduce((sum, device) => sum + Number(device.average_value || 0), 0))
 const visibleDevices = computed(() => devices.devices.filter((device) => selectedDeviceIds.value.includes(device.device_id)))
 const allSelected = computed(() => devices.devices.length > 0 && selectedDeviceIds.value.length === devices.devices.length)
+const availableRanges = computed(() => {
+  if (!maxAgeSeconds.value) return ranges.slice(0, 1)
+  const options = ranges.filter((option) => option.seconds <= maxAgeSeconds.value)
+  return options.length ? options : ranges.slice(0, 1)
+})
+
+function clampRange() {
+  if (!availableRanges.value.some((option) => option.value === range.value)) {
+    range.value = availableRanges.value[availableRanges.value.length - 1]?.value || '1h'
+  }
+}
+
+async function loadAvailability() {
+  const data = await analyticsService.availability({ device_ids: selectedDeviceIds.value.join(',') })
+  maxAgeSeconds.value = Number(data?.max_age_seconds || 0)
+  clampRange()
+}
 
 async function loadAnalytics() {
+  clampRange()
   series.value = makeDeviceHistorySeries(visibleDevices.value, range.value, ui.language === 'ES' ? 'es-MX' : 'en-US', parameter.value)
     .map((serie, index) => ({ ...serie, color: chartPalette[index % chartPalette.length] }))
 }
@@ -98,15 +118,21 @@ function selectAllDevices() {
 onMounted(async () => {
   await devices.fetchDevices()
   selectedDeviceIds.value = devices.devices.map((device) => device.device_id)
+  await loadAvailability()
   await loadAnalytics()
   timer = setInterval(async () => {
     await devices.fetchDevices()
+    await loadAvailability()
     await loadAnalytics()
   }, 9000)
 })
 onUnmounted(() => clearInterval(timer))
 
-watch([range, parameter, () => ui.language, () => selectedDeviceIds.value.join('|')], loadAnalytics)
+watch([range, parameter, () => ui.language, () => selectedDeviceIds.value.join('|')], async () => {
+  await loadAvailability()
+  await loadAnalytics()
+})
+watch(maxAgeSeconds, clampRange)
 watch(() => devices.devices.map((device) => device.device_id).join('|'), () => {
   if (!selectedDeviceIds.value.length) selectedDeviceIds.value = devices.devices.map((device) => device.device_id)
   selectedDeviceIds.value = selectedDeviceIds.value.filter((id) => devices.devices.some((device) => device.device_id === id))
@@ -121,7 +147,7 @@ watch(() => devices.devices.map((device) => device.device_id).join('|'), () => {
     <div class="card analytics-card">
       <h2>{{ ui.t('usageHistory') }}</h2>
       <div class="filters">
-        <div class="field"><label>{{ ui.t('timeRange') }}</label><select v-model="range" class="select"><option v-for="option in ranges" :key="option.value" :value="option.value">{{ ui.t(option.label) }}</option></select></div>
+        <div class="field"><label>{{ ui.t('timeRange') }}</label><select v-model="range" class="select"><option v-for="option in availableRanges" :key="option.value" :value="option.value">{{ ui.t(option.label) }}</option></select></div>
         <div class="field"><label>{{ ui.t('metricParameter') }}</label><select v-model="parameter" class="select"><option v-for="option in parameters" :key="option.value" :value="option.value">{{ optionWithUnit(option) }}</option></select></div>
       </div>
       <div class="device-selector">

@@ -12,6 +12,7 @@ urlpatterns = [
     path("auth/register/", api_views.register, name="api-register"),
     path("user/profile/", api_views.profile, name="api-profile"),
     path("analytics/history/", api_views.analytics_history, name="api-analytics-history"),
+    path("analytics/availability/", api_views.analytics_availability, name="api-analytics-availability"),
     path("cfe/summary/", api_views.cfe_summary, name="api-cfe-summary"),
     path("cfe/tariffs/", api_views.cfe_tariffs, name="api-cfe-tariffs"),
     *router.urls,

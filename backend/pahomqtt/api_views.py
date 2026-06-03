@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core import signing
-from django.db.models import Sum
+from django.db.models import Min, Sum
 from django.db.models.functions import TruncDate, TruncHour, TruncMonth
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -247,6 +247,31 @@ def analytics_history(request):
         if row["bucket"]
     ]
     return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def analytics_availability(request):
+    owned_device_ids = _registered_device_ids(request.user)
+    requested_device_ids = [
+        device_id.strip()
+        for device_id in request.query_params.get("device_ids", "").split(",")
+        if device_id.strip()
+    ]
+    device_ids = [device_id for device_id in requested_device_ids if device_id in owned_device_ids] or owned_device_ids
+    oldest_by_device = (
+        Messages.objects.filter(esp_id__in=device_ids)
+        .values("esp_id")
+        .annotate(oldest=Min("date"))
+    )
+    oldest_dates = [row["oldest"] for row in oldest_by_device if row["oldest"]]
+
+    if not oldest_dates:
+        return Response({"oldest_timestamp": None, "max_age_seconds": 0})
+
+    oldest = max(oldest_dates)
+    max_age_seconds = max(0, int((timezone.now() - oldest).total_seconds()))
+    return Response({"oldest_timestamp": oldest, "max_age_seconds": max_age_seconds})
 
 
 @api_view(["GET"])
