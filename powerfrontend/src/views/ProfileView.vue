@@ -6,6 +6,7 @@ import { userService } from '../services/userService'
 import { cfeService } from '../services/cfeService'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
+import { formatAppDate } from '../utils/datetime'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -20,7 +21,7 @@ const profile = ref({
 })
 
 function formatDate(value) {
-  return value ? new Date(value).toLocaleDateString(ui.language === 'ES' ? 'es-MX' : 'en-US') : ui.t('noData')
+  return formatAppDate(value, ui.language === 'ES' ? 'es-MX' : 'en-US') || ui.t('noData')
 }
 
 function logout() {

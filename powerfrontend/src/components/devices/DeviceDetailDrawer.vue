@@ -6,6 +6,7 @@ import DeviceIcon from './DeviceIcon.vue'
 import { deviceService } from '../../services/deviceService'
 import { useUiStore } from '../../stores/ui'
 import { DATA_REFRESH_MS } from '../../config/refresh'
+import { formatAppTime } from '../../utils/datetime'
 
 const props = defineProps({ device: { type: Object, default: null } })
 const emit = defineEmits(['close', 'updated'])
@@ -19,7 +20,7 @@ let closeTimer
 const deviceId = computed(() => liveDevice.value?.device_id || liveDevice.value?.id)
 
 function formatTime(value) {
-  return value ? new Date(value).toLocaleTimeString(ui.language === 'ES' ? 'es-MX' : 'en-US') : ui.t('noData')
+  return formatAppTime(value, ui.language === 'ES' ? 'es-MX' : 'en-US') || ui.t('noData')
 }
 
 function formatNumber(value, maxDigits = 3) {

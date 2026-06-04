@@ -6,6 +6,7 @@ import { useUiStore } from '../stores/ui'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import DeviceIcon from '../components/devices/DeviceIcon.vue'
 import { DATA_REFRESH_MS } from '../config/refresh'
+import { formatAppTime } from '../utils/datetime'
 
 const devices = useDeviceStore()
 const ui = useUiStore()
@@ -45,7 +46,7 @@ const iconOptions = [
 ]
 
 function formatTime(value) {
-  return value ? new Date(value).toLocaleTimeString(ui.language === 'ES' ? 'es-MX' : 'en-US') : ui.t('noData')
+  return formatAppTime(value, ui.language === 'ES' ? 'es-MX' : 'en-US') || ui.t('noData')
 }
 
 async function addDevice() {

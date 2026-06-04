@@ -2,13 +2,14 @@
 import { Menu } from 'lucide-vue-next'
 import { useUiStore } from '../../stores/ui'
 import DeviceIcon from './DeviceIcon.vue'
+import { formatAppTime } from '../../utils/datetime'
 
 defineProps({ device: { type: Object, required: true } })
 defineEmits(['select'])
 const ui = useUiStore()
 
 function formatTime(value) {
-  return value ? new Date(value).toLocaleTimeString(ui.language === 'ES' ? 'es-MX' : 'en-US') : ui.t('noData')
+  return formatAppTime(value, ui.language === 'ES' ? 'es-MX' : 'en-US') || ui.t('noData')
 }
 </script>
 

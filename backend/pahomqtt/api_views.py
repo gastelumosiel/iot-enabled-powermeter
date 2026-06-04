@@ -271,14 +271,15 @@ def analytics_history(request):
         if not bucket:
             continue
 
+        local_bucket = timezone.localtime(bucket)
         value = round(row["value"] or 0, 2)
         series_by_device.setdefault(
             row["esp_id"],
             {"id": row["esp_id"], "name": device_names.get(row["esp_id"], row["esp_id"]), "points": []},
         )["points"].append(
             {
-                "label": bucket.strftime(label_format),
-                "timestamp": bucket,
+                "label": local_bucket.strftime(label_format),
+                "timestamp": local_bucket,
                 "value": value,
                 "power": value,
             }
