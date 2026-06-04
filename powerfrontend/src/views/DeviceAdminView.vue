@@ -5,6 +5,7 @@ import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import DeviceIcon from '../components/devices/DeviceIcon.vue'
+import { DATA_REFRESH_MS } from '../config/refresh'
 
 const devices = useDeviceStore()
 const ui = useUiStore()
@@ -114,7 +115,7 @@ async function refreshDevices() {
 
 onMounted(async () => {
   await devices.fetchDevices()
-  timer = setInterval(refreshDevices, 7000)
+  timer = setInterval(refreshDevices, DATA_REFRESH_MS)
 })
 onUnmounted(() => clearInterval(timer))
 </script>

@@ -5,6 +5,7 @@ import { useUiStore } from '../stores/ui'
 import { analyticsService } from '../services/analyticsService'
 import PowerLineChart from '../components/charts/PowerLineChart.vue'
 import DeviceBarChart from '../components/charts/DeviceBarChart.vue'
+import { DATA_REFRESH_MS } from '../config/refresh'
 
 const devices = useDeviceStore()
 const ui = useUiStore()
@@ -128,7 +129,7 @@ onMounted(async () => {
     await devices.fetchDevices()
     await loadAvailability()
     await loadAnalytics()
-  }, 9000)
+  }, DATA_REFRESH_MS)
 })
 onUnmounted(() => clearInterval(timer))
 

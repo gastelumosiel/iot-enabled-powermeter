@@ -5,6 +5,7 @@ import StatusBadge from '../ui/StatusBadge.vue'
 import DeviceIcon from './DeviceIcon.vue'
 import { deviceService } from '../../services/deviceService'
 import { useUiStore } from '../../stores/ui'
+import { DATA_REFRESH_MS } from '../../config/refresh'
 
 const props = defineProps({ device: { type: Object, default: null } })
 const emit = defineEmits(['close', 'updated'])
@@ -54,7 +55,7 @@ watch(() => props.device, (value) => {
 }, { immediate: true })
 
 onMounted(() => {
-  timer = setInterval(refresh, 10000)
+  timer = setInterval(refresh, DATA_REFRESH_MS)
 })
 
 onUnmounted(() => {

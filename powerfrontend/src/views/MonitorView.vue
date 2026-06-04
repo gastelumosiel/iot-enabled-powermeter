@@ -5,6 +5,7 @@ import { useUiStore } from '../stores/ui'
 import DeviceCard from '../components/devices/DeviceCard.vue'
 import DeviceDetailDrawer from '../components/devices/DeviceDetailDrawer.vue'
 import PowerlytixLogo from '../components/ui/PowerlytixLogo.vue'
+import { DATA_REFRESH_MS } from '../config/refresh'
 
 const devices = useDeviceStore()
 const ui = useUiStore()
@@ -27,7 +28,7 @@ async function refreshMonitor() {
 
 onMounted(async () => {
   await refreshMonitor()
-  timer = setInterval(refreshMonitor, 5000)
+  timer = setInterval(refreshMonitor, DATA_REFRESH_MS)
 })
 onUnmounted(() => clearInterval(timer))
 
