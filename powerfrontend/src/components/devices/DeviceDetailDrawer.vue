@@ -22,6 +22,12 @@ function formatTime(value) {
   return value ? new Date(value).toLocaleTimeString(ui.language === 'ES' ? 'es-MX' : 'en-US') : ui.t('noData')
 }
 
+function formatNumber(value, maxDigits = 3) {
+  return Number(value || 0).toLocaleString(ui.language === 'ES' ? 'es-MX' : 'en-US', {
+    maximumFractionDigits: maxDigits,
+  })
+}
+
 async function refresh() {
   if (!isVisible.value || !deviceId.value) return
   const token = ++requestToken
@@ -85,20 +91,20 @@ onUnmounted(() => {
         <section class="card detail-section">
           <h3><Zap :size="22" color="#10b981" /> {{ ui.t('powerParameters') }}</h3>
           <div class="metric-grid">
-            <div class="metric p-active"><span>{{ ui.t('activePower') }} (P)</span><strong>{{ Math.round(liveDevice.active_power) }} W</strong></div>
-            <div class="metric p-reactive"><span>{{ ui.t('reactivePower') }} (Q)</span><strong>{{ liveDevice.reactive_power }} VAR</strong></div>
-            <div class="metric p-apparent"><span>{{ ui.t('apparentPower') }} (S)</span><strong>{{ liveDevice.apparent_power }} VA</strong></div>
-            <div class="metric p-factor"><span>{{ ui.t('powerFactor') }} (PF)</span><strong>{{ liveDevice.power_factor }}</strong></div>
+            <div class="metric p-active"><span>{{ ui.t('activePower') }} (P)</span><strong>{{ formatNumber(liveDevice.active_power) }} W</strong></div>
+            <div class="metric p-reactive"><span>{{ ui.t('reactivePower') }} (Q)</span><strong>{{ formatNumber(liveDevice.reactive_power) }} VAR</strong></div>
+            <div class="metric p-apparent"><span>{{ ui.t('apparentPower') }} (S)</span><strong>{{ formatNumber(liveDevice.apparent_power) }} VA</strong></div>
+            <div class="metric p-factor"><span>{{ ui.t('powerFactor') }} (PF)</span><strong>{{ formatNumber(liveDevice.power_factor) }}</strong></div>
           </div>
         </section>
 
         <section class="card detail-section">
           <h3><Gauge :size="22" color="#2563eb" /> {{ ui.t('electricalParameters') }}</h3>
           <div class="parameter-grid">
-            <div class="parameter e-voltage"><span>{{ ui.t('voltage') }}</span><strong>{{ liveDevice.vrms }} V</strong></div>
-            <div class="parameter e-current"><span>{{ ui.t('current') }}</span><strong>{{ liveDevice.irms }} A</strong></div>
-            <div class="parameter e-phase"><span>{{ ui.t('phase') }}</span><strong>{{ liveDevice.phase }}°</strong></div>
-            <div class="parameter e-frequency"><span>{{ ui.t('frequency') }}</span><strong>{{ liveDevice.frequency }} Hz</strong></div>
+            <div class="parameter e-voltage"><span>{{ ui.t('voltage') }}</span><strong>{{ formatNumber(liveDevice.vrms) }} V</strong></div>
+            <div class="parameter e-current"><span>{{ ui.t('current') }}</span><strong>{{ formatNumber(liveDevice.irms) }} A</strong></div>
+            <div class="parameter e-phase"><span>{{ ui.t('phase') }}</span><strong>{{ formatNumber(liveDevice.phase) }}°</strong></div>
+            <div class="parameter e-frequency"><span>{{ ui.t('frequency') }}</span><strong>{{ formatNumber(liveDevice.frequency) }} Hz</strong></div>
           </div>
         </section>
 
@@ -107,7 +113,7 @@ onUnmounted(() => {
           <div class="info-grid">
             <div class="info-row"><span>{{ ui.t('deviceStatus') }}</span><StatusBadge :status="liveDevice.status" /></div>
             <div class="info-row"><span>{{ ui.t('lastUpdate') }}</span><strong>{{ formatTime(liveDevice.timestamp) }}</strong></div>
-            <div class="info-row"><span>{{ ui.t('estimatedDaily') }}</span><strong>{{ liveDevice.energy_kwh }} kWh</strong></div>
+            <div class="info-row"><span>{{ ui.t('estimatedDaily') }}</span><strong>{{ formatNumber(liveDevice.energy_kwh) }} kWh</strong></div>
             <div class="info-row"><span>{{ ui.t('frontendConnection') }}</span><strong>HTTP API REST</strong></div>
           </div>
         </section>
