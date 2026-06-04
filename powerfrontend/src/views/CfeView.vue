@@ -5,6 +5,7 @@ import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import { cfeService } from '../services/cfeService'
 import { analyticsService } from '../services/analyticsService'
+import { userService } from '../services/userService'
 import DeviceIcon from '../components/devices/DeviceIcon.vue'
 import { DATA_REFRESH_MS } from '../config/refresh'
 
@@ -22,6 +23,7 @@ const tariffOptions = cfeService.tariffOptions()
 const tariff = ref(cfeService.localTariff(savedSettings.value.rate))
 const cfeSummary = ref({ accumulated_kwh: 0, devices: [] })
 const saveMessage = ref(false)
+const settingsLoaded = ref(false)
 let saveMessageTimer
 let dataTimer
 
@@ -136,8 +138,14 @@ function dateLabel(value) {
 }
 
 async function saveSettings() {
-  localStorage.setItem('powerlytix_cfe_rate', form.value.rate)
-  localStorage.setItem('powerlytix_cfe_period_start', form.value.periodStart)
+  const data = await userService.updateCfeSettings({
+    rate: form.value.rate,
+    period_start: form.value.periodStart,
+  })
+  form.value = {
+    rate: data.rate || form.value.rate,
+    periodStart: data.period_start || form.value.periodStart,
+  }
   savedSettings.value = { ...form.value }
   saveMessage.value = true
   clearTimeout(saveMessageTimer)
@@ -154,6 +162,33 @@ async function loadTariff() {
   tariff.value = await cfeService.tariff({ tariff: savedSettings.value.rate, periodStart: currentBillingMonth.value.start.toISOString().slice(0, 10) })
 }
 
+async function loadUserCfeSettings() {
+  try {
+    let data = await userService.cfeSettings()
+    const localRate = localStorage.getItem('powerlytix_cfe_rate')
+    const localPeriodStart = localStorage.getItem('powerlytix_cfe_period_start')
+    if ((!data.period_start && localPeriodStart) || (data.rate === 'domestic_1c' && localRate && localRate !== data.rate)) {
+      data = await userService.updateCfeSettings({
+        rate: localRate || data.rate,
+        period_start: localPeriodStart || data.period_start,
+      })
+    }
+    savedSettings.value = {
+      rate: data.rate || savedSettings.value.rate,
+      periodStart: data.period_start || savedSettings.value.periodStart,
+    }
+    form.value = { ...savedSettings.value }
+  } catch {
+    savedSettings.value = {
+      rate: localStorage.getItem('powerlytix_cfe_rate') || savedSettings.value.rate,
+      periodStart: localStorage.getItem('powerlytix_cfe_period_start') || savedSettings.value.periodStart,
+    }
+    form.value = { ...savedSettings.value }
+  } finally {
+    settingsLoaded.value = true
+  }
+}
+
 async function loadCfeSummary() {
   cfeSummary.value = await analyticsService.cfeSummary({
     period_start: currentPeriod.value.start.toISOString().slice(0, 10),
@@ -163,6 +198,7 @@ async function loadCfeSummary() {
 }
 
 onMounted(async () => {
+  await loadUserCfeSettings()
   await devices.fetchDevices()
   await loadTariff()
   await loadCfeSummary()

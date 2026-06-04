@@ -11,4 +11,12 @@ export const userService = {
       return mockProfile
     }
   },
+  async cfeSettings() {
+    const response = await api.get('/api/user/cfe-settings/')
+    return response.data
+  },
+  async updateCfeSettings(payload) {
+    const response = await api.patch('/api/user/cfe-settings/', payload)
+    return response.data
+  },
 }

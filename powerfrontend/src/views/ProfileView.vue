@@ -1,9 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { LogOut } from 'lucide-vue-next'
 import { userService } from '../services/userService'
-import { cfeService } from '../services/cfeService'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { formatAppDate } from '../utils/datetime'
@@ -29,24 +28,8 @@ function logout() {
   router.push('/login')
 }
 
-function applyLocalCfeProfile() {
-  const savedRate = localStorage.getItem('powerlytix_cfe_rate') || 'domestic_1c'
-  const tariff = cfeService.localTariff(savedRate)
-  profile.value = {
-    ...profile.value,
-    cfe_rate: tariff.label,
-    bimonthly_limit_kwh: Number(tariff.monthlyLimit || 0) * 2,
-  }
-}
-
 onMounted(async () => {
   profile.value = { ...profile.value, ...(await userService.profile()) }
-  applyLocalCfeProfile()
-  window.addEventListener('powerlytix:cfe-settings-saved', applyLocalCfeProfile)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('powerlytix:cfe-settings-saved', applyLocalCfeProfile)
 })
 </script>
 

@@ -19,6 +19,20 @@ class Device(models.Model):
         return f"{self.device_id} - {self.name}"
 
 
+class UserCfeSettings(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cfe_settings")
+    rate = models.CharField(max_length=40, default="domestic_1c")
+    period_start = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "User_CFE_Settings"
+
+    def __str__(self):
+        return f"{self.user} - {self.rate}"
+
+
 class ESPModule(models.Model):
     esp_id = models.CharField(max_length=100, unique=True)
     owner = models.CharField(max_length=120, blank=True, default="")

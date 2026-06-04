@@ -10,7 +10,7 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from pahomqtt.models import Device, Messages
+from pahomqtt.models import Device, Messages, UserCfeSettings
 from pahomqtt.serializers import DeviceSerializer
 
 
@@ -102,6 +102,25 @@ def _frontend_user(user):
 
 def _signed_token(user):
     return signing.dumps({"user_id": user.pk, "email": user.email}, salt="powerlytix-api")
+
+
+def _user_cfe_settings(user):
+    settings, _ = UserCfeSettings.objects.get_or_create(user=user)
+    if settings.rate not in TARIFFS:
+        settings.rate = "domestic_1c"
+        settings.save(update_fields=["rate", "updated_at"])
+    return settings
+
+
+def _cfe_settings_payload(settings):
+    tariff = TARIFFS.get(settings.rate, TARIFFS["domestic_1c"])
+    return {
+        "rate": settings.rate,
+        "period_start": settings.period_start,
+        "label": tariff["label"],
+        "monthly_limit": tariff["monthlyLimit"],
+        "bimonthly_limit_kwh": tariff["monthlyLimit"] * 2,
+    }
 
 
 def _registered_device_ids(user):
@@ -234,17 +253,45 @@ def profile(request):
     name = user.get_full_name() or user.first_name or user.username
     email = user.email
     created_at = user.date_joined
+    cfe_settings = _cfe_settings_payload(_user_cfe_settings(user))
 
     return Response(
         {
             "name": name,
             "email": email,
             "devices_count": devices_count,
-            "cfe_rate": "Domestica 1C",
-            "bimonthly_limit_kwh": 280,
+            "cfe_rate": cfe_settings["label"],
+            "cfe_rate_code": cfe_settings["rate"],
+            "cfe_period_start": cfe_settings["period_start"],
+            "bimonthly_limit_kwh": cfe_settings["bimonthly_limit_kwh"],
             "created_at": created_at,
         }
     )
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([permissions.IsAuthenticated])
+def cfe_settings(request):
+    settings = _user_cfe_settings(request.user)
+
+    if request.method == "PATCH":
+        rate = request.data.get("rate")
+        period_start = request.data.get("period_start")
+
+        if rate is not None:
+            if rate not in TARIFFS:
+                return Response({"detail": "Unsupported CFE rate."}, status=status.HTTP_400_BAD_REQUEST)
+            settings.rate = rate
+
+        if "period_start" in request.data:
+            parsed_period_start = parse_date(period_start or "")
+            if period_start and parsed_period_start is None:
+                return Response({"detail": "period_start must be YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+            settings.period_start = parsed_period_start
+
+        settings.save()
+
+    return Response(_cfe_settings_payload(settings))
 
 
 @api_view(["GET"])
