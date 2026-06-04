@@ -1,5 +1,5 @@
 import { api } from './api'
-import { makePowerHistory, mockCfeSummary } from '../mocks/devices'
+import { mockCfeSummary } from '../mocks/devices'
 
 async function fallback(callback, waitMs = 450) {
   try {
@@ -15,7 +15,7 @@ async function fallback(callback, waitMs = 450) {
 export const analyticsService = {
   async history(params) {
     const response = await fallback(() => api.get('/api/analytics/history/', { params }))
-    return response?.data || makePowerHistory(params?.range)
+    return response?.data || []
   },
   async availability(params) {
     const response = await fallback(() => api.get('/api/analytics/availability/', { params }))

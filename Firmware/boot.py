@@ -45,8 +45,9 @@ from umqttsimple import MQTTClient
 import ubinascii
 import machine
 import micropython
+import ntptime
 
-mqtt_server = '10.0.0.100'
+mqtt_server = 'srv1612408.hstgr.cloud'
 
 client_id = ubinascii.hexlify(machine.unique_id())
 topic_sub = b'notification'
@@ -66,3 +67,16 @@ while station.isconnected() == False:
 
 print('Connection successful')
 print(station.ifconfig())
+
+ntptime.host = "pool.ntp.org"
+ntptime.timeout = 2  # seconds
+
+# Sync RTC with NTP
+try:
+    ntptime.settime()  # Sets RTC to UTC
+    print("Time synchronized!")
+except Exception as e:
+    print("NTP sync failed:", e)
+
+# Show current UTC time
+print("UTC time:", time.localtime(), time.time())

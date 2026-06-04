@@ -2,8 +2,8 @@ from datetime import timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core import signing
-from django.db.models import Min, Sum
-from django.db.models.functions import TruncDate, TruncHour, TruncMonth
+from django.db.models import Avg, Min, Sum
+from django.db.models.functions import TruncDate, TruncHour, TruncMinute, TruncMonth
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -221,11 +221,23 @@ def profile(request):
 @permission_classes([permissions.IsAuthenticated])
 def analytics_history(request):
     range_key = request.query_params.get("range", "24h")
+    parameter = request.query_params.get("parameter", "active_power")
+    field_by_parameter = {
+        "active_power": "p_active",
+        "reactive_power": "p_reactive",
+        "apparent_power": "p_apparent",
+        "vrms": "voltage",
+        "irms": "current",
+        "power_factor": "power_factor",
+        "frequency": "frequency",
+        "phase": "phase",
+    }
+    metric_field = field_by_parameter.get(parameter, "p_active")
     trunc, delta, label_format = {
-        "1h": (TruncHour, timedelta(hours=1), "%H:%M"),
-        "8h": (TruncHour, timedelta(hours=8), "%H:%M"),
+        "1h": (TruncMinute, timedelta(hours=1), "%H:%M"),
+        "8h": (TruncMinute, timedelta(hours=8), "%H:%M"),
         "24h": (TruncHour, timedelta(hours=24), "%H:%M"),
-        "7d": (TruncDate, timedelta(days=7), "%d %b"),
+        "7d": (TruncHour, timedelta(days=7), "%d %b %H:%M"),
         "30d": (TruncDate, timedelta(days=30), "%d %b"),
         "3m": (TruncDate, timedelta(days=90), "%d %b"),
         "6m": (TruncMonth, timedelta(days=180), "%b %y"),
@@ -233,20 +245,46 @@ def analytics_history(request):
     }.get(range_key, (TruncHour, timedelta(hours=24), "%H:%M"))
 
     since = timezone.now() - delta
-    device_ids = _registered_device_ids(request.user)
+    owned_device_ids = _registered_device_ids(request.user)
+    requested_device_ids = [
+        device_id.strip()
+        for device_id in request.query_params.get("device_ids", "").split(",")
+        if device_id.strip()
+    ]
+    device_ids = [device_id for device_id in requested_device_ids if device_id in owned_device_ids] or owned_device_ids
+    devices = Device.objects.filter(owner=request.user, device_id__in=device_ids)
+    device_names = {device.device_id: device.name for device in devices}
     rows = (
         Messages.objects.filter(date__gte=since, esp_id__in=device_ids)
         .annotate(bucket=trunc("date"))
-        .values("bucket")
-        .annotate(power=Sum("p_active"))
-        .order_by("bucket")
+        .values("esp_id", "bucket")
+        .annotate(value=Avg(metric_field))
+        .order_by("esp_id", "bucket")
     )
-    data = [
-        {"label": row["bucket"].strftime(label_format), "power": round(row["power"] or 0, 2)}
-        for row in rows
-        if row["bucket"]
-    ]
-    return Response(data)
+    series_by_device = {
+        device_id: {"id": device_id, "name": device_names.get(device_id, device_id), "points": []}
+        for device_id in device_ids
+    }
+
+    for row in rows:
+        bucket = row["bucket"]
+        if not bucket:
+            continue
+
+        value = round(row["value"] or 0, 2)
+        series_by_device.setdefault(
+            row["esp_id"],
+            {"id": row["esp_id"], "name": device_names.get(row["esp_id"], row["esp_id"]), "points": []},
+        )["points"].append(
+            {
+                "label": bucket.strftime(label_format),
+                "timestamp": bucket,
+                "value": value,
+                "power": value,
+            }
+        )
+
+    return Response([series for series in series_by_device.values() if series["points"]])
 
 
 @api_view(["GET"])

@@ -2,7 +2,6 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
-import { makeDeviceHistorySeries } from '../mocks/devices'
 import { analyticsService } from '../services/analyticsService'
 import PowerLineChart from '../components/charts/PowerLineChart.vue'
 import DeviceBarChart from '../components/charts/DeviceBarChart.vue'
@@ -93,7 +92,12 @@ async function loadAvailability() {
 
 async function loadAnalytics() {
   clampRange()
-  series.value = makeDeviceHistorySeries(visibleDevices.value, range.value, ui.language === 'ES' ? 'es-MX' : 'en-US', parameter.value)
+  const data = await analyticsService.history({
+    range: range.value,
+    parameter: parameter.value,
+    device_ids: selectedDeviceIds.value.join(','),
+  })
+  series.value = data
     .map((serie, index) => ({ ...serie, color: chartPalette[index % chartPalette.length] }))
 }
 
