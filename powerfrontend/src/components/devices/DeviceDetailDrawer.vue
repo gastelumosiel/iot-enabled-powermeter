@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Gauge, Info, X, Zap } from 'lucide-vue-next'
 import StatusBadge from '../ui/StatusBadge.vue'
 import DeviceIcon from './DeviceIcon.vue'
-import { deviceService } from '../../services/deviceService'
+import { useDeviceStore } from '../../stores/devices'
 import { useUiStore } from '../../stores/ui'
 import { DATA_REFRESH_MS } from '../../config/refresh'
 import { formatAppTime } from '../../utils/datetime'
@@ -11,6 +11,7 @@ import { formatAppTime } from '../../utils/datetime'
 const props = defineProps({ device: { type: Object, default: null } })
 const emit = defineEmits(['close', 'updated'])
 const ui = useUiStore()
+const devices = useDeviceStore()
 const liveDevice = ref(props.device)
 const isVisible = ref(Boolean(props.device))
 let requestToken = 0
@@ -33,7 +34,7 @@ async function refresh() {
   if (!isVisible.value || !deviceId.value) return
   const token = ++requestToken
   const expectedId = deviceId.value
-  const data = await deviceService.getById(deviceId.value)
+  const data = await devices.fetchDevice(deviceId.value)
   if (data && isVisible.value && token === requestToken && (data.device_id === expectedId || data.id === expectedId)) {
     liveDevice.value = data
     emit('updated', data)

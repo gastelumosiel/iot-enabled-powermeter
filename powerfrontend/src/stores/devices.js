@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { deviceService } from '../services/deviceService'
+import { applyEmaFilter } from '../utils/emaFilter'
 
 export const useDeviceStore = defineStore('devices', {
   state: () => ({
@@ -11,13 +12,19 @@ export const useDeviceStore = defineStore('devices', {
     activeCount: (state) => state.devices.filter((device) => device.status === 'online').length,
   },
   actions: {
+    smoothDevice(device) {
+      const previous = this.devices.find((item) => item.device_id === device.device_id || item.id === device.id)
+      return applyEmaFilter(previous, device)
+    },
     async fetchDevices() {
       this.loading = true
-      this.devices = await deviceService.list()
+      const data = await deviceService.list()
+      this.devices = data.map((device) => this.smoothDevice(device))
       this.loading = false
     },
     async fetchDevice(id) {
-      const device = await deviceService.getById(id)
+      const rawDevice = await deviceService.getById(id)
+      const device = rawDevice ? this.smoothDevice(rawDevice) : rawDevice
       const index = this.devices.findIndex((item) => item.device_id === id || item.id === id)
       if (index >= 0 && device) this.devices[index] = device
       return device
