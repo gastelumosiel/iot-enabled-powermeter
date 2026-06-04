@@ -1,9 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core import signing
-from django.db.models import Avg, Min, Sum
+from django.db.models import Avg, Min
 from django.db.models.functions import TruncDate, TruncHour, TruncMinute, TruncMonth
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -119,11 +120,40 @@ def _latest_readings(device_ids=None):
     return latest
 
 
-def _energy_by_device(device_ids=None):
-    rows = Messages.objects.values("esp_id").annotate(total=Sum("p_active"))
+def _energy_by_device(device_ids=None, since=None, until=None):
+    readings = Messages.objects.order_by("esp_id", "date")
     if device_ids is not None:
-        rows = rows.filter(esp_id__in=device_ids)
-    return {row["esp_id"]: (row["total"] or 0) / 1000 for row in rows}
+        readings = readings.filter(esp_id__in=device_ids)
+    if since is not None:
+        readings = readings.filter(date__gte=since)
+    if until is not None:
+        readings = readings.filter(date__lt=until)
+
+    energy = {}
+    previous_by_device = {}
+    max_gap_seconds = 5 * 60
+
+    for reading in readings:
+        previous = previous_by_device.get(reading.esp_id)
+        if previous is not None:
+            elapsed_seconds = (reading.date - previous.date).total_seconds()
+            if 0 < elapsed_seconds <= max_gap_seconds:
+                average_power_watts = (previous.p_active + reading.p_active) / 2
+                energy[reading.esp_id] = energy.get(reading.esp_id, 0) + (average_power_watts * elapsed_seconds) / 3600000
+
+        previous_by_device[reading.esp_id] = reading
+
+    return energy
+
+
+def _parse_local_date_boundary(value, default=None, end_of_day=False):
+    parsed = parse_date(value or "")
+    if parsed is None:
+        return default
+
+    boundary_time = time.max if end_of_day else time.min
+    local_value = timezone.make_aware(datetime.combine(parsed, boundary_time), timezone.get_current_timezone())
+    return local_value
 
 
 class DeviceViewSet(viewsets.ModelViewSet):
@@ -316,8 +346,15 @@ def analytics_availability(request):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def cfe_summary(request):
-    accumulated = round(sum(_energy_by_device(_registered_device_ids(request.user)).values()), 2)
-    configured_limit = 280
+    device_ids = _registered_device_ids(request.user)
+    since = _parse_local_date_boundary(request.query_params.get("period_start"))
+    until = _parse_local_date_boundary(request.query_params.get("period_end"))
+    energy_by_device = _energy_by_device(device_ids, since=since, until=until)
+    devices = Device.objects.filter(owner=request.user, device_id__in=device_ids)
+    device_names = {device.device_id: device.name for device in devices}
+
+    accumulated = round(sum(energy_by_device.values()), 3)
+    configured_limit = float(request.query_params.get("configured_limit") or 280)
     usage_percent = round((accumulated / configured_limit) * 100, 2) if configured_limit else 0
     return Response(
         {
@@ -325,6 +362,14 @@ def cfe_summary(request):
             "configured_limit": configured_limit,
             "usage_percent": usage_percent,
             "remaining_kwh": round(max(configured_limit - accumulated, 0), 2),
+            "devices": [
+                {
+                    "device_id": device_id,
+                    "name": device_names.get(device_id, device_id),
+                    "energy_kwh": round(kwh, 3),
+                }
+                for device_id, kwh in energy_by_device.items()
+            ],
         }
     )
 

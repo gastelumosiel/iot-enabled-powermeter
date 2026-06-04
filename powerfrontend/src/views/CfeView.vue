@@ -4,7 +4,9 @@ import { CalendarDays, ExternalLink, Save, WalletCards } from 'lucide-vue-next'
 import { useDeviceStore } from '../stores/devices'
 import { useUiStore } from '../stores/ui'
 import { cfeService } from '../services/cfeService'
+import { analyticsService } from '../services/analyticsService'
 import DeviceIcon from '../components/devices/DeviceIcon.vue'
+import { DATA_REFRESH_MS } from '../config/refresh'
 
 const devices = useDeviceStore()
 const ui = useUiStore()
@@ -18,11 +20,13 @@ const form = ref({
 })
 const tariffOptions = cfeService.tariffOptions()
 const tariff = ref(cfeService.localTariff(savedSettings.value.rate))
+const cfeSummary = ref({ accumulated_kwh: 0, devices: [] })
 const saveMessage = ref(false)
 let saveMessageTimer
+let dataTimer
 
 const selectedTariffOption = computed(() => tariffOptions.find((option) => option.value === savedSettings.value.rate) || tariffOptions[0])
-const totalKwh = computed(() => devices.devices.reduce((sum, device) => sum + Number(device.energy_kwh || 0), 0))
+const totalKwh = computed(() => Number(cfeSummary.value.accumulated_kwh || 0))
 const monthlyLimit = computed(() => Number(tariff.value?.monthlyLimit || 0))
 const currentPeriod = computed(() => getCurrentBillingPeriod(savedSettings.value.periodStart))
 const currentBillingMonth = computed(() => getCurrentBillingMonth(currentPeriod.value))
@@ -39,10 +43,17 @@ const currentMargin = computed(() => {
   if (!current || !Number.isFinite(current.remaining)) return ui.t('excessTierActive')
   return `${current.remaining.toFixed(1)} kWh ${ui.t('beforeNextTier')}`
 })
-const deviceCosts = computed(() => devices.devices.map((device) => ({
-  ...device,
-  cost: calculateTieredCost(Number(device.energy_kwh || 0), tariff.value?.blocks || [], elapsedBillingMonths.value).total,
-})))
+const deviceCosts = computed(() => (cfeSummary.value.devices || []).map((summaryDevice) => {
+  const device = devices.devices.find((item) => item.device_id === summaryDevice.device_id) || {}
+  const energyKwh = Number(summaryDevice.energy_kwh || 0)
+  return {
+    ...device,
+    ...summaryDevice,
+    icon: device.icon || 'plug',
+    energy_kwh: energyKwh,
+    cost: calculateTieredCost(energyKwh, tariff.value?.blocks || [], elapsedBillingMonths.value).total,
+  }
+}))
 const meterSegments = computed(() => buildMeterSegments(tariff.value?.blocks || [], monthlyLimit.value))
 const pointerStyle = computed(() => ({ left: `${usagePercent.value}%` }))
 
@@ -124,7 +135,7 @@ function dateLabel(value) {
   return value.toLocaleDateString(ui.language === 'ES' ? 'es-MX' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function saveSettings() {
+async function saveSettings() {
   localStorage.setItem('powerlytix_cfe_rate', form.value.rate)
   localStorage.setItem('powerlytix_cfe_period_start', form.value.periodStart)
   savedSettings.value = { ...form.value }
@@ -134,7 +145,8 @@ function saveSettings() {
     saveMessage.value = false
   }, 2200)
   window.dispatchEvent(new CustomEvent('powerlytix:cfe-settings-saved', { detail: { ...savedSettings.value } }))
-  loadTariff()
+  await loadTariff()
+  await loadCfeSummary()
 }
 
 async function loadTariff() {
@@ -142,12 +154,28 @@ async function loadTariff() {
   tariff.value = await cfeService.tariff({ tariff: savedSettings.value.rate, periodStart: currentBillingMonth.value.start.toISOString().slice(0, 10) })
 }
 
+async function loadCfeSummary() {
+  cfeSummary.value = await analyticsService.cfeSummary({
+    period_start: currentPeriod.value.start.toISOString().slice(0, 10),
+    period_end: currentPeriod.value.end.toISOString().slice(0, 10),
+    configured_limit: monthlyLimit.value * Math.max(elapsedBillingMonths.value, 1),
+  })
+}
+
 onMounted(async () => {
   await devices.fetchDevices()
   await loadTariff()
+  await loadCfeSummary()
+  dataTimer = setInterval(async () => {
+    await devices.fetchDevices()
+    await loadCfeSummary()
+  }, DATA_REFRESH_MS)
 })
 
-onUnmounted(() => clearTimeout(saveMessageTimer))
+onUnmounted(() => {
+  clearTimeout(saveMessageTimer)
+  clearInterval(dataTimer)
+})
 
 </script>
 

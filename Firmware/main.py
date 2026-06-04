@@ -140,8 +140,6 @@ CT_REG = 0x19 # Change Shunt to CT (modify current gain)
 frame_gain = build_frame(0xFF, CT_REG, 0x27, 0x03)
 PERI_REG = 0x2E # Period register
 frame_peri = build_frame(PERI_REG, 0xFF, 0xFF, 0xFF)
-SIGN_REG = 0x2A # Signs register
-frame_sign = build_frame(SIGN_REG, 0xFF, 0xFF, 0xFF)
 PHASE_REG = 0x4E # Phase measurement register
 frame_phase = build_frame(PHASE_REG, 0xFF, 0xFF, 0xFF)
 ACT_REG = 0x5C # Active power register
@@ -283,7 +281,7 @@ while True:
 			time.sleep_us(50)
 			uart.read()  # flush garbage
 			# Reading Phase by sending next reg in line
-			uart.write(frame_sign)
+			uart.write(frame_act)
 
 			# Wait until full response arrives
 			time.sleep_ms(40)
@@ -322,36 +320,6 @@ while True:
 			
 			time.sleep_us(50)
 			uart.read()  # flush garbage
-			# Reading Sign by sending next reg in line
-			uart.write(frame_act)
-
-			# Wait until full response arrives
-			time.sleep_ms(20)
-			data = read_exact(5)
-			if not data:
-				print("Timeout")
-				continue
-			if not check_crc(data):
-				print("CRC FAIL")
-				continue
-			if data:
-				# FIXED: correct byte assembly
-				msg = (
-					(data[3] << 24) |
-					(data[2] << 16) |
-					(data[1] << 8)  |
-					data[0]
-				)
-
-				print("---------Sign Register---------")
-				# print("message:", bin(msg))
-
-				sign_act = (msg >> 4) & 1
-				sign_rea = (msg >> 6) & 1
-
-			
-			time.sleep_us(50)
-			uart.read()  # flush garbage
 			# Reading Active by sending next reg in line
 			uart.write(frame_rea)
 
@@ -376,12 +344,13 @@ while True:
 				print("---------Active Power Register---------")
 				# print("message:", bin(msg))
 
-				active_reg = msg & 0x1FFFFFFF
+				active_reg = msg & 0xFFFFFFF
+				active_sign = msg & 0x10000000
 
 				# print("Active Register:", active_reg)
 				# print()
-				if sign_act:
-					active_reg = active_reg - 0x1FFFFFFF
+				if active_sign:
+					active_reg = active_reg - 0xFFFFFFF
 
 				Active = active_reg * lsb_pow * -1
 
@@ -415,12 +384,13 @@ while True:
 				print("---------Reactive Power Register---------")
 				# print("message:", bin(msg))
 
-				reactive_reg = msg & 0x1FFFFFFF
+				reactive_reg = msg & 0xFFFFFFF
+				reactive_sign = msg & 0x10000000
 
 				# print("Reactive Register:", reactive_reg)
 				# print()
-				if sign_rea:
-					reactive_reg = reactive_reg - 0x1FFFFFFF
+				if reactive_sign:
+					reactive_reg = reactive_reg - 0xFFFFFFF
 						
 				Reactive = reactive_reg * lsb_pow
 				

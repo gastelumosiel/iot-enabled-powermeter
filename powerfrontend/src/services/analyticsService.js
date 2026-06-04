@@ -21,8 +21,8 @@ export const analyticsService = {
     const response = await fallback(() => api.get('/api/analytics/availability/', { params }))
     return response?.data || { oldest_timestamp: null, max_age_seconds: 0 }
   },
-  async cfeSummary() {
-    const response = await fallback(() => api.get('/api/cfe/summary/'))
+  async cfeSummary(params) {
+    const response = await fallback(() => api.get('/api/cfe/summary/', { params }))
     return response?.data || mockCfeSummary
   },
 }
