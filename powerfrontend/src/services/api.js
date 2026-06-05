@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '' : 'http://localhost:8000'),
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? '' : 'https://powerlytix.org/api'),
   timeout: 1800,
 })
 
