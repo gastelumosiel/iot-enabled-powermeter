@@ -50,8 +50,8 @@ onMounted(async () => {
           <div><dt>{{ ui.t('name') }}</dt><dd>{{ profile.name }}</dd></div>
           <div><dt>{{ ui.t('email') }}</dt><dd>{{ profile.email }}</dd></div>
           <div><dt>{{ ui.t('deviceCount') }}</dt><dd>{{ profile.devices_count }}</dd></div>
-          <div><dt>{{ ui.t('configuredCfeRate') }}</dt><dd>{{ profile.cfe_rate }}</dd></div>
-          <div><dt>{{ ui.t('bimonthlyLimit') }}</dt><dd>{{ profile.bimonthly_limit_kwh }} kWh</dd></div>
+          <div><dt>{{ ui.t('configuredCfeRate') }}</dt><dd>{{ profile.cfe_rate || ui.t('cfeNotConfigured') }}</dd></div>
+          <div><dt>{{ ui.t('bimonthlyLimit') }}</dt><dd>{{ profile.bimonthly_limit_kwh ? `${profile.bimonthly_limit_kwh} kWh` : ui.t('cfeNotConfigured') }}</dd></div>
           <div><dt>{{ ui.t('createdAt') }}</dt><dd>{{ formatDate(profile.created_at) }}</dd></div>
         </dl>
         <button class="btn btn-primary" disabled>{{ ui.t('edit') }}</button>

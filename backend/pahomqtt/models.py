@@ -21,7 +21,7 @@ class Device(models.Model):
 
 class UserCfeSettings(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="cfe_settings")
-    rate = models.CharField(max_length=40, default="domestic_1c")
+    rate = models.CharField(max_length=40, null=True, blank=True)
     period_start = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

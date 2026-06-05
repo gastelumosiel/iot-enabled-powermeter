@@ -105,20 +105,21 @@ def _signed_token(user):
 
 def _user_cfe_settings(user):
     settings, _ = UserCfeSettings.objects.get_or_create(user=user)
-    if settings.rate not in TARIFFS:
-        settings.rate = "domestic_1c"
+    if settings.rate and settings.rate not in TARIFFS:
+        settings.rate = None
         settings.save(update_fields=["rate", "updated_at"])
     return settings
 
 
 def _cfe_settings_payload(settings):
-    tariff = TARIFFS.get(settings.rate, TARIFFS["domestic_1c"])
+    tariff = TARIFFS.get(settings.rate) if settings.rate else None
     return {
         "rate": settings.rate,
         "period_start": settings.period_start,
-        "label": tariff["label"],
-        "monthly_limit": tariff["monthlyLimit"],
-        "bimonthly_limit_kwh": tariff["monthlyLimit"] * 2,
+        "label": tariff["label"] if tariff else None,
+        "monthly_limit": tariff["monthlyLimit"] if tariff else None,
+        "bimonthly_limit_kwh": tariff["monthlyLimit"] * 2 if tariff else None,
+        "is_configured": bool(settings.rate and settings.period_start),
     }
 
 
@@ -272,10 +273,11 @@ def profile(request):
             "name": name,
             "email": email,
             "devices_count": devices_count,
-            "cfe_rate": cfe_settings["label"],
+            "cfe_rate": cfe_settings["label"] if cfe_settings["is_configured"] else None,
             "cfe_rate_code": cfe_settings["rate"],
             "cfe_period_start": cfe_settings["period_start"],
-            "bimonthly_limit_kwh": cfe_settings["bimonthly_limit_kwh"],
+            "bimonthly_limit_kwh": cfe_settings["bimonthly_limit_kwh"] if cfe_settings["is_configured"] else None,
+            "cfe_is_configured": cfe_settings["is_configured"],
             "created_at": created_at,
         }
     )

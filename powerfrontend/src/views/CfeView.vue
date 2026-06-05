@@ -13,8 +13,8 @@ const devices = useDeviceStore()
 const ui = useUiStore()
 const today = new Date().toISOString().slice(0, 10)
 const savedSettings = ref({
-  rate: 'domestic_1c',
-  periodStart: today,
+  rate: '',
+  periodStart: '',
 })
 const form = ref({
   ...savedSettings.value,
@@ -23,9 +23,11 @@ const tariffOptions = cfeService.tariffOptions()
 const tariff = ref(cfeService.localTariff(savedSettings.value.rate))
 const cfeSummary = ref({ accumulated_kwh: 0, devices: [] })
 const saveMessage = ref(false)
+const settingsError = ref('')
 let saveMessageTimer
 let dataTimer
 
+const isCfeConfigured = computed(() => Boolean(savedSettings.value.rate && savedSettings.value.periodStart))
 const selectedTariffOption = computed(() => tariffOptions.find((option) => option.value === savedSettings.value.rate) || tariffOptions[0])
 const totalKwh = computed(() => Number(cfeSummary.value.accumulated_kwh || 0))
 const monthlyLimit = computed(() => Number(tariff.value?.monthlyLimit || 0))
@@ -137,6 +139,11 @@ function dateLabel(value) {
 }
 
 async function saveSettings() {
+  settingsError.value = ''
+  if (!form.value.rate || !form.value.periodStart) {
+    settingsError.value = ui.t('completeCfeSettings')
+    return
+  }
   const data = await userService.updateCfeSettings({
     rate: form.value.rate,
     period_start: form.value.periodStart,
@@ -153,10 +160,13 @@ async function saveSettings() {
   }, 2200)
   window.dispatchEvent(new CustomEvent('powerlytix:cfe-settings-saved', { detail: { ...savedSettings.value } }))
   await loadTariff()
+  await devices.fetchDevices()
   await loadCfeSummary()
+  startDataTimer()
 }
 
 async function loadTariff() {
+  if (!isCfeConfigured.value) return
   tariff.value = cfeService.localTariff(savedSettings.value.rate)
   tariff.value = await cfeService.tariff({ tariff: savedSettings.value.rate, periodStart: currentBillingMonth.value.start.toISOString().slice(0, 10) })
 }
@@ -164,13 +174,14 @@ async function loadTariff() {
 async function loadUserCfeSettings() {
   const data = await userService.cfeSettings()
   savedSettings.value = {
-    rate: data.rate || savedSettings.value.rate,
-    periodStart: data.period_start || savedSettings.value.periodStart,
+    rate: data.is_configured ? data.rate : '',
+    periodStart: data.is_configured ? data.period_start : '',
   }
   form.value = { ...savedSettings.value }
 }
 
 async function loadCfeSummary() {
+  if (!isCfeConfigured.value) return
   cfeSummary.value = await analyticsService.cfeSummary({
     period_start: currentPeriod.value.start.toISOString().slice(0, 10),
     period_end: currentPeriod.value.end.toISOString().slice(0, 10),
@@ -178,15 +189,22 @@ async function loadCfeSummary() {
   })
 }
 
-onMounted(async () => {
-  await loadUserCfeSettings()
-  await devices.fetchDevices()
-  await loadTariff()
-  await loadCfeSummary()
+function startDataTimer() {
+  if (dataTimer) return
   dataTimer = setInterval(async () => {
+    if (!isCfeConfigured.value) return
     await devices.fetchDevices()
     await loadCfeSummary()
   }, DATA_REFRESH_MS)
+}
+
+onMounted(async () => {
+  await loadUserCfeSettings()
+  if (!isCfeConfigured.value) return
+  await devices.fetchDevices()
+  await loadTariff()
+  await loadCfeSummary()
+  startDataTimer()
 })
 
 onUnmounted(() => {
@@ -202,6 +220,29 @@ onUnmounted(() => {
       <div><h1>{{ ui.t('cfeTitle') }}</h1><p>{{ ui.t('cfeSubtitle') }}</p></div>
     </div>
 
+    <div v-if="!isCfeConfigured" class="card analytics-card cfe-setup-card">
+      <h2>{{ ui.t('cfeSetupTitle') }}</h2>
+      <p>{{ ui.t('cfeSetupCopy') }}</p>
+      <div class="filters compact-filters">
+        <div class="field">
+          <label>{{ ui.t('cfeRate') }}</label>
+          <select v-model="form.rate" class="select">
+            <option value="" disabled>{{ ui.t('selectCfeRate') }}</option>
+            <option v-for="option in tariffOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>{{ ui.t('receiptPeriodStart') }}</label>
+          <input v-model="form.periodStart" class="input" type="date" />
+        </div>
+      </div>
+      <div v-if="settingsError" class="error-text">{{ settingsError }}</div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" @click="saveSettings"><Save :size="18" /> {{ ui.t('save') }}</button>
+      </div>
+    </div>
+
+    <template v-else>
     <div class="grid cfe-grid">
       <div class="card analytics-card cfe-meter-card">
         <div class="meter-head">
@@ -271,5 +312,6 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+    </template>
   </section>
 </template>
