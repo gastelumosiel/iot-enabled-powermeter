@@ -2,7 +2,7 @@ import { api } from './api'
 
 const officialBase = 'https://app.cfe.mx/Aplicaciones/CCFE/Tarifas/TarifasCRECasa/Tarifas'
 
-const fallbackTariffs = {
+const tariffs = {
   domestic_1: {
     label: 'Tarifa 1',
     code: '1',
@@ -82,23 +82,12 @@ const fallbackTariffs = {
   },
 }
 
-async function fallback(callback, waitMs = 550) {
-  try {
-    return await Promise.race([
-      callback(),
-      new Promise((resolve) => setTimeout(() => resolve(null), waitMs)),
-    ])
-  } catch {
-    return null
-  }
-}
-
 export const cfeService = {
   localTariff(tariff) {
-    return fallbackTariffs[tariff] || fallbackTariffs.domestic_1c
+    return tariffs[tariff] || tariffs.domestic_1c
   },
   tariffOptions() {
-    return Object.entries(fallbackTariffs).map(([value, tariff]) => ({
+    return Object.entries(tariffs).map(([value, tariff]) => ({
       value,
       label: tariff.label,
       monthlyLimit: tariff.monthlyLimit,
@@ -106,7 +95,7 @@ export const cfeService = {
     }))
   },
   async tariff({ tariff, periodStart }) {
-    const response = await fallback(() => api.get('/api/cfe/tariffs/', { params: { tariff, period_start: periodStart } }))
-    return response?.data || fallbackTariffs[tariff] || fallbackTariffs.domestic_1c
+    const { data } = await api.get('/api/cfe/tariffs/', { params: { tariff, period_start: periodStart } })
+    return data
   },
 }

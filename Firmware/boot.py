@@ -13,13 +13,12 @@ gc.collect()
 from config_storage import load_string, ssid_txt, pass_txt, fb_txt
 
 first_boot = True
-"""
+
 continue_perm = load_string(fb_txt, default="(empty)")
 if continue_perm == "continue":
     first_boot = False
-
 if first_boot:
-    ssid = 'ESP_001'
+    ssid = 'ESP_002'
     password = '123456789'
 
     ap = network.WLAN(network.AP_IF)
@@ -36,9 +35,10 @@ if first_boot:
     run()
 else:
     ssid = load_string(ssid_txt, default="(empty)")
-    password = load_string(pass_txt, default="(empty)")"""
-ssid = "S22UltradeRene"
-password = "pwje3672"
+    password = load_string(pass_txt, default="(empty)")
+
+# ssid = "S22UltradeRene"
+# password = "pwje3672"
 
 import time
 from umqttsimple import MQTTClient
@@ -61,8 +61,6 @@ station = network.WLAN(network.STA_IF)
 
 station.active(True)
 station.disconnect()   # clear any old state
-
-# print(station.scan())
 
 station.connect(ssid, password)
 

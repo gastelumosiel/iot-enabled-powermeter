@@ -11,26 +11,17 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     async login(credentials) {
-      try {
-        const { data } = await authService.login(credentials)
-        this.token = data.token || data.access || data.key
-        this.user = data.user || { email: credentials.email, name: 'Usuario PowerLytix' }
-      } catch {
-        this.token = 'mock-development-token'
-        this.user = { email: credentials.email, name: 'Usuario PowerLytix' }
-      }
+      const { data } = await authService.login(credentials)
+      this.token = data.token || data.access || data.key
+      this.user = data.user || { email: credentials.email, name: 'Usuario PowerLytix' }
+      
       localStorage.setItem('powerlytix_token', this.token)
       localStorage.setItem('powerlytix_user', JSON.stringify(this.user))
     },
     async register(payload) {
-      try {
-        const { data } = await authService.register(payload)
-        this.token = data.token || data.access || 'mock-development-token'
-        this.user = data.user || { email: payload.email, name: payload.name }
-      } catch {
-        this.token = 'mock-development-token'
-        this.user = { email: payload.email, name: payload.name }
-      }
+      const { data } = await authService.register(payload)
+      this.token = data.token || data.access || data.key
+      this.user = data.user || { email: payload.email, name: payload.name }
       localStorage.setItem('powerlytix_token', this.token)
       localStorage.setItem('powerlytix_user', JSON.stringify(this.user))
     },

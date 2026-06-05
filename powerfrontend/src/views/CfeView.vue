@@ -13,8 +13,8 @@ const devices = useDeviceStore()
 const ui = useUiStore()
 const today = new Date().toISOString().slice(0, 10)
 const savedSettings = ref({
-  rate: localStorage.getItem('powerlytix_cfe_rate') || 'domestic_1c',
-  periodStart: localStorage.getItem('powerlytix_cfe_period_start') || today,
+  rate: 'domestic_1c',
+  periodStart: today,
 })
 const form = ref({
   ...savedSettings.value,
@@ -23,7 +23,6 @@ const tariffOptions = cfeService.tariffOptions()
 const tariff = ref(cfeService.localTariff(savedSettings.value.rate))
 const cfeSummary = ref({ accumulated_kwh: 0, devices: [] })
 const saveMessage = ref(false)
-const settingsLoaded = ref(false)
 let saveMessageTimer
 let dataTimer
 
@@ -163,30 +162,12 @@ async function loadTariff() {
 }
 
 async function loadUserCfeSettings() {
-  try {
-    let data = await userService.cfeSettings()
-    const localRate = localStorage.getItem('powerlytix_cfe_rate')
-    const localPeriodStart = localStorage.getItem('powerlytix_cfe_period_start')
-    if ((!data.period_start && localPeriodStart) || (data.rate === 'domestic_1c' && localRate && localRate !== data.rate)) {
-      data = await userService.updateCfeSettings({
-        rate: localRate || data.rate,
-        period_start: localPeriodStart || data.period_start,
-      })
-    }
-    savedSettings.value = {
-      rate: data.rate || savedSettings.value.rate,
-      periodStart: data.period_start || savedSettings.value.periodStart,
-    }
-    form.value = { ...savedSettings.value }
-  } catch {
-    savedSettings.value = {
-      rate: localStorage.getItem('powerlytix_cfe_rate') || savedSettings.value.rate,
-      periodStart: localStorage.getItem('powerlytix_cfe_period_start') || savedSettings.value.periodStart,
-    }
-    form.value = { ...savedSettings.value }
-  } finally {
-    settingsLoaded.value = true
+  const data = await userService.cfeSettings()
+  savedSettings.value = {
+    rate: data.rate || savedSettings.value.rate,
+    periodStart: data.period_start || savedSettings.value.periodStart,
   }
+  form.value = { ...savedSettings.value }
 }
 
 async function loadCfeSummary() {

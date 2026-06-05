@@ -3,6 +3,7 @@ from machine import Pin, UART, reset
 import time
 import json
 from math import sqrt, acos
+from config_storage import save_string, fb_txt
 
 def sub_cb(topic, msg):
 	print((topic, msg))
@@ -21,7 +22,7 @@ def connect_and_subscribe():
 def restart_and_reconnect():
 	print('Failed to connect to MQTT broker. Reconnecting...')
 	time.sleep(10)
-	machine.reset()
+	reset()
 
 try:
 	client = connect_and_subscribe()
@@ -82,6 +83,7 @@ scs = Pin(1, Pin.OUT, value=1)
 led_green = Pin(10, Pin.OUT)
 led_red = Pin(7, Pin.OUT, value=0)
 led_blue = Pin(6, Pin.OUT, value=0)
+rst_btn = Pin(8, Pin.IN)
 
 # ------------------ FAST BIT REVERSE ------------------+
 # Precomputed lookup table for 8-bit reversal
@@ -180,6 +182,9 @@ uart.write(frame_init)
 time.sleep_ms(500)
 
 while True:
+	if not rst_btn.value():
+		save_string(fb_txt, "None")
+		reset()
 	try:
 		client.check_msg()
 		if (time.time() - last_message) > message_interval:
@@ -402,7 +407,7 @@ while True:
 			PowerFactor = Active/Apparent
 			Phase_angle = acos(PowerFactor)
 			UNIX_OFFSET = 946684800
-			json_msg = json.dumps({"esp_id":"ESP_001", "voltage":voltage, "current":current, "p_active":Active, "p_reactive":Reactive, "p_apparent":Apparent, "power_factor":PowerFactor, "phase":phase, "frequency":frequency, "date":time.time()+UNIX_OFFSET})
+			json_msg = json.dumps({"esp_id":"ESP_002", "voltage":voltage, "current":current, "p_active":Active, "p_reactive":Reactive, "p_apparent":Apparent, "power_factor":PowerFactor, "phase":phase, "frequency":frequency, "date":time.time()+UNIX_OFFSET})
 
 			client.publish(topic_pub, json_msg)
 

@@ -12,6 +12,13 @@ export const EMA_FIELDS = [
 ]
 
 export function applyEmaFilter(previous, next, alpha = EMA_ALPHA) {
+  if (next?.status === 'offline') {
+    return EMA_FIELDS.reduce((device, field) => {
+      device[field] = 0
+      return device
+    }, { ...next })
+  }
+
   if (!previous) return { ...next }
 
   return EMA_FIELDS.reduce((device, field) => {

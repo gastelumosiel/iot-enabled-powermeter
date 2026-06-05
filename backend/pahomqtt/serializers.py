@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from pahomqtt.models import Device, Messages
 
@@ -39,8 +40,13 @@ class DeviceSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         reading = getattr(instance, "latest_reading", None)
+        offline_after = self.context.get("offline_after_seconds", 5 * 60)
 
         if reading is not None:
+            age_seconds = (timezone.now() - reading.date).total_seconds()
+            status = "online" if age_seconds <= offline_after else "offline"
+            if status == "online" and reading.p_active <= 0.2:
+                status = "idle"
             data.update(
                 {
                     "timestamp": reading.date,
@@ -56,7 +62,7 @@ class DeviceSerializer(serializers.ModelSerializer):
                         self.context.get("energy_by_device", {}).get(instance.device_id, 0),
                         3,
                     ),
-                    "status": "online",
+                    "status": status,
                 }
             )
         else:

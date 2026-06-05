@@ -347,6 +347,7 @@ h1, h2, h3, strong, th, .btn, .nav-link { font-weight: 740; letter-spacing: 0; }
 .device-head h3 { margin: 0; font-size: 1.05rem; }
 .status-dot { width: 11px; height: 11px; border-radius: 50%; background: #94a3b8; margin-left: auto; }
 .status-dot.online { background: var(--emerald-600); }
+.status-dot.idle { background: #f59e0b; }
 .status-dot.offline { background: var(--danger); }
 .power-row { display: flex; align-items: end; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid #edf2f7; }
 .power-row strong { color: var(--emerald-800); font-size: 2.1rem; font-weight: 760; }
@@ -401,6 +402,7 @@ h1, h2, h3, strong, th, .btn, .nav-link { font-weight: 740; letter-spacing: 0; }
 .pill { display: inline-flex; align-items: center; gap: 7px; min-height: 26px; border-radius: 999px; padding: 0 12px; font-weight: 700; font-size: .82rem; background: #e2e8f0; color: #334155; }
 .pill .status-dot { margin-left: 0; }
 .pill.online { background: #bbf7d0; color: #047857; }
+.pill.idle { background: #fef3c7; color: #b45309; }
 .pill.offline { background: #fee2e2; color: #b91c1c; }
 
 .analytics-card { padding: 28px 30px; }
