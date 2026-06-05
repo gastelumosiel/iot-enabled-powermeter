@@ -11,6 +11,7 @@ const auth = useAuthStore()
 const ui = useUiStore()
 const form = ref({ name: '', email: '', password: '', confirm: '' })
 const error = ref('')
+const loading = ref(false)
 const languageOpen = ref(false)
 const languageRef = ref(null)
 
@@ -23,16 +24,31 @@ function onDocumentPointerDown(event) {
   if (!languageRef.value?.contains(event.target)) languageOpen.value = false
 }
 
+function requestErrorMessage(err) {
+  return err?.response?.data?.detail
+    || err?.response?.data?.error
+    || err?.message
+    || 'No se pudo crear la cuenta.'
+}
+
 onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown))
 
 async function submit() {
   error.value = ''
+  if (loading.value) return
   if (!form.value.name || !form.value.email || !form.value.password) error.value = ui.t('completeFields')
   else if (form.value.password !== form.value.confirm) error.value = ui.t('passwordsMismatch')
   if (error.value) return
-  await auth.register(form.value)
-  router.push('/monitor')
+  loading.value = true
+  try {
+    await auth.register(form.value)
+    router.push('/monitor')
+  } catch (err) {
+    error.value = requestErrorMessage(err)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -71,7 +87,7 @@ async function submit() {
         <div class="field"><label>{{ ui.t('passwordLabel') }}</label><input v-model="form.password" class="input" type="password" /></div>
         <div class="field"><label>{{ ui.t('confirmation') }}</label><input v-model="form.confirm" class="input" type="password" /></div>
         <div v-if="error" class="error-text">{{ error }}</div>
-        <button class="btn btn-primary btn-full">{{ ui.t('register') }}</button>
+        <button class="btn btn-primary btn-full" :disabled="loading">{{ ui.t('register') }}</button>
         <RouterLink class="auth-link" to="/login">{{ ui.t('hasAccount') }}</RouterLink>
       </form>
     </section>

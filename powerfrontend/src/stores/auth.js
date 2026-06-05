@@ -13,6 +13,7 @@ export const useAuthStore = defineStore('auth', {
     async login(credentials) {
       const { data } = await authService.login(credentials)
       this.token = data.token || data.access || data.key
+      if (!this.token) throw new Error('Authentication token missing from response.')
       this.user = data.user || { email: credentials.email, name: 'Usuario PowerLytix' }
       
       localStorage.setItem('powerlytix_token', this.token)
@@ -21,6 +22,7 @@ export const useAuthStore = defineStore('auth', {
     async register(payload) {
       const { data } = await authService.register(payload)
       this.token = data.token || data.access || data.key
+      if (!this.token) throw new Error('Authentication token missing from response.')
       this.user = data.user || { email: payload.email, name: payload.name }
       localStorage.setItem('powerlytix_token', this.token)
       localStorage.setItem('powerlytix_user', JSON.stringify(this.user))

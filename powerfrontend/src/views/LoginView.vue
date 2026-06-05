@@ -12,6 +12,7 @@ const ui = useUiStore()
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const loading = ref(false)
 const languageOpen = ref(false)
 const languageRef = ref(null)
 
@@ -24,17 +25,32 @@ function onDocumentPointerDown(event) {
   if (!languageRef.value?.contains(event.target)) languageOpen.value = false
 }
 
+function requestErrorMessage(err) {
+  return err?.response?.data?.detail
+    || err?.response?.data?.error
+    || err?.message
+    || 'No se pudo iniciar sesion.'
+}
+
 onMounted(() => document.addEventListener('pointerdown', onDocumentPointerDown))
 onBeforeUnmount(() => document.removeEventListener('pointerdown', onDocumentPointerDown))
 
 async function submit() {
   error.value = ''
+  if (loading.value) return
   if (!email.value || !password.value) {
     error.value = ui.t('missingLogin')
     return
   }
-  await auth.login({ email: email.value, password: password.value })
-  router.push('/monitor')
+  loading.value = true
+  try {
+    await auth.login({ email: email.value, password: password.value })
+    router.push('/monitor')
+  } catch (err) {
+    error.value = requestErrorMessage(err)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -72,7 +88,7 @@ async function submit() {
         <div class="field"><label>{{ ui.t('emailLabel') }}</label><input v-model="email" class="input" type="email" placeholder="tu@email.com" /></div>
         <div class="field"><label>{{ ui.t('passwordLabel') }}</label><input v-model="password" class="input" type="password" placeholder="********" /></div>
         <div v-if="error" class="error-text">{{ error }}</div>
-        <button class="btn btn-primary btn-full">{{ ui.t('signIn') }}</button>
+        <button class="btn btn-primary btn-full" :disabled="loading">{{ ui.t('signIn') }}</button>
         <RouterLink class="auth-link" to="/register">{{ ui.t('noAccount') }}</RouterLink>
       </form>
     </section>
