@@ -2,8 +2,7 @@ from datetime import datetime, time, timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core import signing
-from django.db.models import Avg, Min
-from django.db.models.functions import TruncDate, TruncHour, TruncMinute, TruncMonth
+from django.db.models import Min
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
@@ -175,6 +174,19 @@ def _parse_local_date_boundary(value, default=None, end_of_day=False):
     return local_value
 
 
+def _history_bucket(value, range_key):
+    local_value = timezone.localtime(value)
+    if range_key in ("1h", "8h"):
+        return local_value.replace(second=0, microsecond=0)
+    if range_key == "24h":
+        return local_value.replace(minute=0, second=0, microsecond=0)
+    if range_key == "7d":
+        return local_value.replace(minute=0, second=0, microsecond=0)
+    if range_key in ("30d", "3m"):
+        return local_value.replace(hour=0, minute=0, second=0, microsecond=0)
+    return local_value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
 class DeviceViewSet(viewsets.ModelViewSet):
     serializer_class = DeviceSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -310,16 +322,16 @@ def analytics_history(request):
         "phase": "phase",
     }
     metric_field = field_by_parameter.get(parameter, "p_active")
-    trunc, delta, label_format = {
-        "1h": (TruncMinute, timedelta(hours=1), "%H:%M"),
-        "8h": (TruncMinute, timedelta(hours=8), "%H:%M"),
-        "24h": (TruncHour, timedelta(hours=24), "%H:%M"),
-        "7d": (TruncHour, timedelta(days=7), "%d %b %H:%M"),
-        "30d": (TruncDate, timedelta(days=30), "%d %b"),
-        "3m": (TruncDate, timedelta(days=90), "%d %b"),
-        "6m": (TruncMonth, timedelta(days=180), "%b %y"),
-        "12m": (TruncMonth, timedelta(days=365), "%b %y"),
-    }.get(range_key, (TruncHour, timedelta(hours=24), "%H:%M"))
+    delta, label_format = {
+        "1h": (timedelta(hours=1), "%H:%M"),
+        "8h": (timedelta(hours=8), "%H:%M"),
+        "24h": (timedelta(hours=24), "%H:%M"),
+        "7d": (timedelta(days=7), "%d %b %H:%M"),
+        "30d": (timedelta(days=30), "%d %b"),
+        "3m": (timedelta(days=90), "%d %b"),
+        "6m": (timedelta(days=180), "%b %y"),
+        "12m": (timedelta(days=365), "%b %y"),
+    }.get(range_key, (timedelta(hours=24), "%H:%M"))
 
     since = timezone.now() - delta
     owned_device_ids = _registered_device_ids(request.user)
@@ -331,36 +343,43 @@ def analytics_history(request):
     device_ids = [device_id for device_id in requested_device_ids if device_id in owned_device_ids] or owned_device_ids
     devices = Device.objects.filter(owner=request.user, device_id__in=device_ids)
     device_names = {device.device_id: device.name for device in devices}
-    rows = (
+    readings = (
         Messages.objects.filter(date__gte=since, esp_id__in=device_ids)
-        .annotate(bucket=trunc("date"))
-        .values("esp_id", "bucket")
-        .annotate(value=Avg(metric_field))
-        .order_by("esp_id", "bucket")
+        .only("esp_id", "date", metric_field)
+        .order_by("esp_id", "date")
     )
     series_by_device = {
         device_id: {"id": device_id, "name": device_names.get(device_id, device_id), "points": []}
         for device_id in device_ids
     }
+    bucket_totals = {}
 
-    for row in rows:
-        bucket = row["bucket"]
-        if not bucket:
+    for reading in readings:
+        bucket = _history_bucket(reading.date, range_key)
+        value = getattr(reading, metric_field, None)
+        if value is None:
             continue
 
-        local_bucket = timezone.localtime(bucket)
-        value = round(row["value"] or 0, 2)
+        key = (reading.esp_id, bucket)
+        total, count = bucket_totals.get(key, (0, 0))
+        bucket_totals[key] = (total + float(value), count + 1)
+
+    for (device_id, bucket), (total, count) in bucket_totals.items():
+        value = round(total / max(count, 1), 2)
         series_by_device.setdefault(
-            row["esp_id"],
-            {"id": row["esp_id"], "name": device_names.get(row["esp_id"], row["esp_id"]), "points": []},
+            device_id,
+            {"id": device_id, "name": device_names.get(device_id, device_id), "points": []},
         )["points"].append(
             {
-                "label": local_bucket.strftime(label_format),
-                "timestamp": local_bucket,
+                "label": bucket.strftime(label_format),
+                "timestamp": bucket,
                 "value": value,
                 "power": value,
             }
         )
+
+    for series in series_by_device.values():
+        series["points"].sort(key=lambda point: point["timestamp"])
 
     return Response([series for series in series_by_device.values() if series["points"]])
 

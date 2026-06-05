@@ -37,8 +37,8 @@ if first_boot:
 else:
     ssid = load_string(ssid_txt, default="(empty)")
     password = load_string(pass_txt, default="(empty)")"""
-ssid = "NETGEAR40"
-password = "fancyocean269"
+ssid = "S22UltradeRene"
+password = "pwje3672"
 
 import time
 from umqttsimple import MQTTClient
@@ -60,10 +60,21 @@ counter = 0
 station = network.WLAN(network.STA_IF)
 
 station.active(True)
+station.disconnect()   # clear any old state
+
+# print(station.scan())
+
 station.connect(ssid, password)
 
-while station.isconnected() == False:
-  pass
+for _ in range(30):   # wait up to 15s
+    if station.isconnected():
+        break
+    time.sleep(0.5)
+
+if station.isconnected():
+    print("Connected:", station.ifconfig())
+else:
+    print("Failed to connect")
 
 print('Connection successful')
 print(station.ifconfig())
