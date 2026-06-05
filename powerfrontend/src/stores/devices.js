@@ -13,9 +13,9 @@ export const useDeviceStore = defineStore('devices', {
   },
   actions: {
     smoothDevice(device) {
-      // return device
-      const previous = this.devices.find((item) => item.device_id === device.device_id || item.id === device.id)
-      return applyEmaFilter(previous, device)
+      return device
+      // const previous = this.devices.find((item) => item.device_id === device.device_id || item.id === device.id)
+      // return applyEmaFilter(previous, device)
     },
     async fetchDevices() {
       this.loading = true
