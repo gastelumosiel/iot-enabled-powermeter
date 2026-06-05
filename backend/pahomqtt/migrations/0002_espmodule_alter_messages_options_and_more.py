@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('esp_id', models.CharField(max_length=100, unique=True)),
-                ('owner', models.CharField()),
+                ('owner', models.CharField(max_length=120)),
             ],
         ),
         migrations.AlterModelOptions(
