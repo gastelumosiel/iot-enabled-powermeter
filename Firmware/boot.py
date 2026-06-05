@@ -9,7 +9,7 @@ esp.osdebug(None)
 
 import gc
 gc.collect()
-
+"""
 from config_storage import load_string, ssid_txt, pass_txt, fb_txt
 
 first_boot = True
@@ -36,9 +36,9 @@ if first_boot:
 else:
     ssid = load_string(ssid_txt, default="(empty)")
     password = load_string(pass_txt, default="(empty)")
-
-# ssid = "S22UltradeRene"
-# password = "pwje3672"
+"""
+ssid = "NETGEAR40"
+password = "fancyocean269"
 
 import time
 from umqttsimple import MQTTClient
@@ -61,7 +61,7 @@ station = network.WLAN(network.STA_IF)
 
 station.active(True)
 station.disconnect()   # clear any old state
-
+print("Connecting to:",ssid,"with password:",password)
 station.connect(ssid, password)
 
 for _ in range(30):   # wait up to 15s
@@ -73,9 +73,10 @@ if station.isconnected():
     print("Connected:", station.ifconfig())
 else:
     print("Failed to connect")
+    machine.reset()
 
-print('Connection successful')
-print(station.ifconfig())
+# print('Connection successful')
+# print(station.ifconfig())
 
 ntptime.host = "pool.ntp.org"
 ntptime.timeout = 2  # seconds
