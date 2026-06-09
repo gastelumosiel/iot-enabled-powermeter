@@ -15,6 +15,8 @@ const parameter = ref('active_power')
 const series = ref([])
 const maxAgeSeconds = ref(0)
 let timer
+let analyticsRequestId = 0
+let availabilityRequestId = 0
 
 const chartPalette = [
   '#0f766e',
@@ -86,18 +88,33 @@ function clampRange() {
 }
 
 async function loadAvailability() {
+  const requestId = ++availabilityRequestId
   const data = await analyticsService.availability({ device_ids: selectedDeviceIds.value.join(',') })
+  if (requestId !== availabilityRequestId) return
   maxAgeSeconds.value = Number(data?.max_age_seconds || 0)
   clampRange()
 }
 
 async function loadAnalytics() {
   clampRange()
-  const data = await analyticsService.history({
+  const requestId = ++analyticsRequestId
+  const query = {
     range: range.value,
     parameter: parameter.value,
     device_ids: selectedDeviceIds.value.join(','),
+  }
+  const data = await analyticsService.history({
+    range: query.range,
+    parameter: query.parameter,
+    device_ids: query.device_ids,
   })
+  if (
+    requestId !== analyticsRequestId
+    || query.range !== range.value
+    || query.parameter !== parameter.value
+    || query.device_ids !== selectedDeviceIds.value.join(',')
+  ) return
+
   series.value = data
     .map((serie, index) => ({ ...serie, color: chartPalette[index % chartPalette.length] }))
 }
@@ -133,7 +150,8 @@ onMounted(async () => {
 })
 onUnmounted(() => clearInterval(timer))
 
-watch([range, parameter, () => ui.language, () => selectedDeviceIds.value.join('|')], async () => {
+watch([range, parameter], loadAnalytics)
+watch(() => selectedDeviceIds.value.join('|'), async () => {
   await loadAvailability()
   await loadAnalytics()
 })

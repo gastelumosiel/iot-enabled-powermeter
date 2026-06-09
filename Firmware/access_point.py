@@ -6,7 +6,9 @@ except:
 
 from config_storage import save_string, ssid_txt, pass_txt, fb_txt
 from index import web_page
-from machine import reset
+from machine import reset, Pin
+
+led_blue = Pin(6, Pin.OUT, value=1)
 
 text_ssid = None
 text_pass = None

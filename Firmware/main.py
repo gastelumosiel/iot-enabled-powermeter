@@ -407,7 +407,7 @@ while True:
 			PowerFactor = Active/Apparent
 			Phase_angle = acos(PowerFactor)
 			UNIX_OFFSET = 946684800
-			json_msg = json.dumps({"esp_id":"ESP_002", "voltage":voltage, "current":current, "p_active":Active, "p_reactive":Reactive, "p_apparent":Apparent, "power_factor":PowerFactor, "phase":phase, "frequency":frequency, "date":time.time()+UNIX_OFFSET})
+			json_msg = json.dumps({"esp_id":"ESP_001", "voltage":voltage, "current":current, "p_active":Active, "p_reactive":Reactive, "p_apparent":Apparent, "power_factor":PowerFactor, "phase":phase, "frequency":frequency, "date":time.time()+UNIX_OFFSET})
 
 			client.publish(topic_pub, json_msg)
 

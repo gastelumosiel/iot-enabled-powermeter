@@ -9,7 +9,7 @@ esp.osdebug(None)
 
 import gc
 gc.collect()
-"""
+# """
 from config_storage import load_string, ssid_txt, pass_txt, fb_txt
 
 first_boot = True
@@ -18,7 +18,7 @@ continue_perm = load_string(fb_txt, default="(empty)")
 if continue_perm == "continue":
     first_boot = False
 if first_boot:
-    ssid = 'ESP_002'
+    ssid = 'ESP_001'
     password = '123456789'
 
     ap = network.WLAN(network.AP_IF)
@@ -36,9 +36,9 @@ if first_boot:
 else:
     ssid = load_string(ssid_txt, default="(empty)")
     password = load_string(pass_txt, default="(empty)")
-"""
-ssid = "NETGEAR40"
-password = "fancyocean269"
+# """
+# ssid = "NETGEAR40"
+# password = "fancyocean269"
 
 import time
 from umqttsimple import MQTTClient
