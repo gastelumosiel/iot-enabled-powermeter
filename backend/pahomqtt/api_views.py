@@ -130,10 +130,16 @@ def _registered_device_ids(user):
 
 
 def _latest_readings(device_ids=None):
-    readings = Messages.objects.order_by("esp_id", "-date")
-    if device_ids is not None:
-        readings = readings.filter(esp_id__in=device_ids)
     latest = {}
+
+    if device_ids is not None:
+        for device_id in device_ids:
+            reading = Messages.objects.filter(esp_id=device_id).order_by("-date").first()
+            if reading is not None:
+                latest[device_id] = reading
+        return latest
+
+    readings = Messages.objects.order_by("esp_id", "-date")
     for reading in readings:
         latest.setdefault(reading.esp_id, reading)
     return latest
@@ -202,11 +208,11 @@ class DeviceViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        device_ids = _registered_device_ids(self.request.user)
-        latest = _latest_readings(device_ids)
-        for device in getattr(self, "_prefetched_devices", []):
-            device.latest_reading = latest.get(device.device_id)
-        context["energy_by_device"] = _energy_by_device(device_ids)
+        include_energy = self.request.query_params.get("include_energy") in ("1", "true", "yes")
+        if include_energy:
+            context["energy_by_device"] = _energy_by_device(_registered_device_ids(self.request.user))
+        else:
+            context["energy_by_device"] = {}
         return context
 
     def list(self, request, *args, **kwargs):

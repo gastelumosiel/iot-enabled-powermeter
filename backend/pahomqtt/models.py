@@ -58,3 +58,7 @@ class Messages(models.Model):
     class Meta:
         ordering = ["date"]
         db_table = "data_modules"
+        indexes = [
+            models.Index(fields=["esp_id", "date"], name="messages_esp_date_idx"),
+            models.Index(fields=["date"], name="messages_date_idx"),
+        ]
